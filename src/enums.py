@@ -104,7 +104,7 @@ class CorsairLogicalLayout(Enumeration):
 
 
 class CorsairDeviceCaps(Enumeration):
-    None = 0x0000
+    NoCaps = 0x0000
     Lighting = 0x0001
     PropertyLookup = 0x0002
 
