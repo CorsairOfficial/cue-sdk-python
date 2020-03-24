@@ -24,20 +24,21 @@ if not system == 'windows':
     msg = "{} system is not supported".format(system)
     raise RuntimeError(msg)
 
-data_files = []
-lib_x86 = os.path.join('.', 'dll', 'CUESDK_2017.dll')
-lib_x64 = os.path.join('.', 'dll', 'CUESDK.x64_2017.dll')
-if os.path.exists(lib_x86) and os.path.exists(lib_x64):
-    install_libdir = os.path.join(sys.prefix, 'DLLs')
-    data_files.append((install_libdir, [lib_x86]))
-    data_files.append((install_libdir, [lib_x64]))
+def package_files(directory):
+    return [
+        os.path.join('..', path, filename)
+        for (path, directories, filenames) in os.walk(directory)
+        for filename in filenames
+    ]
 
 setup(
     name="cuesdk",
     version=read_version(),
     packages=['cuesdk'],
     package_dir={'cuesdk': 'src'},
-    data_files=data_files,
+    package_data={
+        '': package_files('dll'),
+    },
     zip_safe=False,
     author="Corsair Memory, Inc.",
     url="https://github.com/CorsairOfficial/cue-sdk-python",
@@ -64,6 +65,3 @@ setup(
         'Topic :: System :: Hardware'
     ]
 )
-
-if not data_files:
-    print("\nWARNING: Could not find %s" % lib_path)

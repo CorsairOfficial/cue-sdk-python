@@ -24,8 +24,7 @@ def get_library_path():
     else:
         suffix = ''
     lib_name = 'CUESDK' + suffix + '_2017.dll'
-    dllpath = os.path.join(sys.prefix, 'DLLs')
-    return os.path.join(dllpath, lib_name)
+    return os.path.join('dll', lib_name)
 
 
 def load_library(library_path):
