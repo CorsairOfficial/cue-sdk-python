@@ -1,18 +1,43 @@
 cue-sdk-python
 ==============
 
+[![PyPI license](https://img.shields.io/pypi/l/cuesdk.svg)](https://pypi.org/project/cuesdk)
+[![PyPI version info](https://img.shields.io/pypi/v/cuesdk.svg)](https://pypi.org/project/cuesdk)
+[![PyPI supported Python versions](https://img.shields.io/pypi/pyversions/cuesdk.svg)](https://pypi.org/project/cuesdk)
+
+# Intro
+
 This repository is dedicated for a `cuesdk` package on [PyPI](https://pypi.org/)
 
 `cuesdk` package is a `ctypes`-based CUE SDK binding for Python 3
 
-You can install the package from PyPI by using `pip`:
+# Prerequisites
 
-```
-   $ pip install cuesdk
+- `cuesdk` works on Windows platform only.
+- Python 3.3 or higher. Support for earlier versions of Python is not provided. Python 2.7 or lower is not supported.
+- Microsoft Visual C++ Redistributable for Visual Studio 2017.
+  - x86 https://aka.ms/vs/15/release/VC_redist.x86.exe
+  - x64 https://aka.ms/vs/15/release/VC_redist.x64.exe 
+
+# Installing
+
+You can install the package from PyPI:
+
+```sh
+   # Windows
+   $ py -3 -m pip install -U cuesdk
 ```
 
-or by running the setup script:
+# Usage
 
-```
-   $ python setup.py install
+```python
+from cuesdk import CueSdk
+
+sdk = CueSdk()
+sdk.connect()
+
+print(sdk.protocol_details)
+
+print(sdk.get_devices())
+
 ```
