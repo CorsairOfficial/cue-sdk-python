@@ -5,7 +5,7 @@ import sys
 from setuptools import setup
 
 
-def read_version(filename='src/version.py'):
+def read_version(filename='cuesdk/version.py'):
     """Parse a __version__ number from a source file"""
     with open(filename) as source:
         text = source.read()
@@ -24,6 +24,7 @@ if not system == 'windows':
     msg = "{} system is not supported".format(system)
     raise RuntimeError(msg)
 
+
 def package_files(directory):
     return [
         os.path.join('..', path, filename)
@@ -31,16 +32,17 @@ def package_files(directory):
         for filename in filenames
     ]
 
+
 setup(
     name="cuesdk",
     version=read_version(),
     packages=['cuesdk'],
-    package_dir={'cuesdk': 'src'},
     package_data={
-        '': package_files('dll'),
+        'cuesdk': package_files('cuesdk/bin'),
     },
     zip_safe=False,
     author="Corsair Memory, Inc.",
+    license='MIT',
     url="https://github.com/CorsairOfficial/cue-sdk-python",
     description="Ctypes-based CUE SDK binding for Python",
     long_description=open("README.md").read(),
