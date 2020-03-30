@@ -57,21 +57,37 @@ class CueSdk():
         err = native.CorsairGetLastError()
         return err == CorsairError.Success
 
-    def get_device_count(self):
-        return native.CorsairGetDeviceCount()
-
     def get_devices(self):
         cnt = native.CorsairGetDeviceCount()
         if cnt > 0:
             return [self.get_device_info(i) for i in range(cnt)]
         return []
 
+    def get_device_count(self):
+        """
+        Returns number of connected Corsair devices.
+        For keyboards, mice, mousemats, headsets and headset stands not more
+        than one device of each type is included in return value in case if
+        there are multiple devices of same type connected to the system.
+        For DIY-devices and coolers actual number of connected devices is
+        included in return value. For memory modules actual number of
+        connected modules is included in return value, modules are enumerated
+        with respect to their logical position (counting from left to right,
+        from top to bottom).
+
+        Use get_device_info() to get information about a certain device.
+        """
+        return native.CorsairGetDeviceCount()
+
     def get_device_info(self, device_index):
         """
+        Returns information about a device based on provided index.
+
         Parameters
         ----------
         device_index : int
-            The index of the device
+            Zero-based index of device. Should be strictly less than a value
+            returned by get_device_count()
         """
         p = native.CorsairGetDeviceInfo(device_index)
         s = p.contents
@@ -86,13 +102,25 @@ class CueSdk():
                       s.capsMask, s.ledsCount, channels)
 
     def get_last_error(self):
+        """
+        Returns last error that occurred in this thread while using
+        any of SDK functions.
+        """
         return native.CorsairGetLastError()
 
     def request_control(self):
+        """
+        Requests exclusive control over lighting.
+        By default client has shared control over lighting so there is no need
+        to call request_control() unless a client requires exclusive control.
+        """
         return native.CorsairRequestControl(
             CorsairAccessMode.ExclusiveLightingControl)
 
     def release_control(self):
+        """
+        Releases previously requested exclusive control.
+        """
         return native.CorsairReleaseControl(
             CorsairAccessMode.ExclusiveLightingControl)
 
@@ -136,13 +164,23 @@ class CueSdk():
 
     def set_led_colors_buffer_by_device_index(self, device_index, colors):
         """
+        Sets specified LEDs to some colors. This function set LEDs colors
+        in the buffer which is written to the devices via
+        set_led_colors_flush_buffer or set_led_colors_flush_buffer_async.
+        Typical usecase is next: set_led_colors_flush_buffer or
+        set_led_colors_flush_buffer_async is called to write LEDs colors to
+        the device and follows after one or more calls of
+        set_led_colors_buffer_by_device_index to set the LEDs buffer.
+        This function does not take logical layout into account.
+
         Parameters
         ----------
         device_index : int
-            The index of the device
+            Zero-based index of device. Should be strictly less than value
+            returned by get_device_count()
         colors : list
-            The list of LED colors: each item is a list with items
-            [ledId, r, g, b]
+            The list containing colors for each LED: each item is a list
+            with items [ledId, r, g, b]
         """
         sz = len(colors)
         data = (CorsairLedColor * sz)()
@@ -157,17 +195,34 @@ class CueSdk():
                         device_index, sz, data)
 
     def set_led_colors_flush_buffer(self):
+        """
+        Writes to the devices LEDs colors buffer which is previously filled by
+        the set_led_colors_buffer_by_device_index function. This function
+        executes synchronously, if you are concerned about delays consider
+        using set_led_colors_flush_buffer_async
+        """
         return native.CorsairSetLedsColorsFlushBuffer()
 
     def set_led_colors_flush_buffer_async(self):
+        """
+        Same as set_led_colors_flush_buffer but returns control to the caller
+        immediately
+        """
         return native.CorsairSetLedsColorsFlushBufferAsync(None, None)
 
     def get_led_colors_by_device_index(self, device_index, led_identifiers):
         """
+        Gets current color for the list of requested LEDs.
+        The color should represent the actual state of the hardware LED, which
+        could be a combination of SDK and/or CUE input. This function works
+        for keyboard, mouse, mousemat, headset, headset stand, DIY-devices,
+        memory module and cooler.
+
         Parameters
         ----------
         device_index : int
-            The index of the device
+            Zero-based index of device. Should be strictly less than value
+            returned by get_device_count()
 
         led_identifiers : list
             The list of CorsairLedId values
@@ -190,6 +245,11 @@ class CueSdk():
 
     def get_led_positions_by_device_index(self, device_index):
         """
+        Provides list of keyboard, mouse, headset, mousemat, headset stand,
+        DIY-devices, memory module and cooler LEDs by its index with their
+        positions. Position could be either physical (only device-dependent)
+        or logical (depend on device as well as CUE settings).
+
         Parameters
         ----------
         device_index : int
