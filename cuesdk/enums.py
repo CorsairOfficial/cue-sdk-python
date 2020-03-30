@@ -41,11 +41,12 @@ class Enumeration(ctypes.c_uint, metaclass=EnumerationType):
     _members_ = {}
 
     def __repr__(self):
-        value = self.value
-        return "<%s.%s: %d>" % (
+        return "<%s: %d>" % (self.__str__(), self.value)
+
+    def __str__(self):
+        return "%s.%s" % (
             self.__class__.__name__,
-            self._reverse_map_.get(value, '(unknown)'),
-            value
+            self._reverse_map_.get(self.value, '(unknown)')
         )
 
     def __eq__(self, other):
