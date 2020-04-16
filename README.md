@@ -1,9 +1,9 @@
 cue-sdk-python
 ==============
 
-[![PyPI license](https://img.shields.io/pypi/l/cuesdk.svg)](https://pypi.org/project/cuesdk)
-[![PyPI version info](https://img.shields.io/pypi/v/cuesdk.svg)](https://pypi.org/project/cuesdk)
-[![PyPI supported Python versions](https://img.shields.io/pypi/pyversions/cuesdk.svg)](https://pypi.org/project/cuesdk)
+[![PyPI license](https://img.shields.io/pypi/l/cuesdk.svg?style=for-the-badge)](https://pypi.org/project/cuesdk)
+[![PyPI version info](https://img.shields.io/pypi/v/cuesdk.svg?style=for-the-badge)](https://pypi.org/project/cuesdk)
+[![PyPI supported Python versions](https://img.shields.io/pypi/pyversions/cuesdk.svg?style=for-the-badge)](https://pypi.org/project/cuesdk)
 
 # Intro
 
@@ -41,3 +41,8 @@ print(sdk.protocol_details)
 print(sdk.get_devices())
 
 ```
+
+# Links
+
+- API reference: https://github.com/CorsairOfficial/cue-sdk-python/blob/master/api_reference.md
+- Code examples: https://github.com/corsairofficial/cue-sdk-python/tree/master/example
