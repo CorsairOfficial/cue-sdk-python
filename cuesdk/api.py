@@ -1,22 +1,19 @@
-import ctypes
-from .enums import (CorsairAccessMode,
-                    CorsairError,
-                    CorsairDevicePropertyId,
-                    CorsairDevicePropertyType,
-                    CorsairLedId,
-                    CorsairEventId)
-from .structs import (CorsairProtocolDetails,
-                      CorsairDeviceInfo,
-                      CorsairLedPosition,
-                      CorsairLedPositions,
-                      CorsairLedColor,
-                      CorsairEvent)
+from ctypes import c_bool, c_int32, byref
+from typing import Any, Optional, Union, Callable, Dict, Sequence, Tuple
+
 from .capi import CorsairNativeApi
+from .enums import (CorsairAccessMode, CorsairError, CorsairDevicePropertyId,
+                    CorsairDevicePropertyType, CorsairLedId, CorsairEventId)
+from .helpers import ColorRgb
+from .structs import (CorsairProtocolDetails, CorsairDeviceInfo,
+                      CorsairLedPosition, CorsairLedPositions, CorsairLedColor,
+                      CorsairEvent)
+from .utils import bytes_to_str_or_default
 
 __all__ = ['CueSdk']
 
 
-class Device():
+class Device(object):
     def __init__(self, id, type, model, caps_mask, led_count, channels):
         self.id = id
         self.type = type
@@ -26,23 +23,23 @@ class Device():
         self.channels = channels
 
     def __repr__(self):
-        return str(self.model)
+        return self.model
 
 
-class Channel():
+class Channel(object):
     def __init__(self, total_led_count, devices):
         self.total_led_count = total_led_count
         self.devices = devices
 
 
-class ChannelDevice():
+class ChannelDevice(object):
     def __init__(self, type, led_count):
         self.type = type
         self.led_count = led_count
 
 
-class CueSdk():
-    def __init__(self, sdk_path=None):
+class CueSdk(object):
+    def __init__(self, sdk_path: Optional[str] = None) -> None:
         global native
         native = CorsairNativeApi(sdk_path)
 
@@ -63,9 +60,9 @@ class CueSdk():
             return [self.get_device_info(i) for i in range(cnt)]
         return []
 
-    def get_device_count(self):
-        """
-        Returns number of connected Corsair devices.
+    def get_device_count(self) -> int:
+        """Returns number of connected Corsair devices.
+
         For keyboards, mice, mousemats, headsets and headset stands not more
         than one device of each type is included in return value in case if
         there are multiple devices of same type connected to the system.
@@ -75,19 +72,16 @@ class CueSdk():
         with respect to their logical position (counting from left to right,
         from top to bottom).
 
-        Use get_device_info() to get information about a certain device.
+        Use `CueSdk.get_device_info` to get information about a certain device.
         """
         return native.CorsairGetDeviceCount()
 
-    def get_device_info(self, device_index):
-        """
-        Returns information about a device based on provided index.
+    def get_device_info(self, device_index: int):
+        """Returns information about a device based on provided index.
 
-        Parameters
-        ----------
-        device_index : int
-            Zero-based index of device. Should be strictly less than a value
-            returned by get_device_count()
+        Args:
+            device_index: zero-based index of device. Should be strictly
+                less than a value returned by `CueSdk.get_device_count`
         """
         p = native.CorsairGetDeviceInfo(device_index)
         s = p.contents
@@ -96,182 +90,207 @@ class CueSdk():
             ch = s.channels.channels[chi]
             devices = [
                 ChannelDevice(ch.devices[i].type, ch.devices[i].deviceLedCount)
-                for i in range(ch.devicesCount)]
+                for i in range(ch.devicesCount)
+            ]
             channels.append(Channel(ch.totalLedsCount, devices))
-        return Device(s.deviceId.decode(), s.type, s.model.decode(),
-                      s.capsMask, s.ledsCount, channels)
+        return Device(bytes_to_str_or_default(s.deviceId), s.type,
+                      bytes_to_str_or_default(s.model), s.capsMask,
+                      s.ledsCount, channels)
 
-    def get_last_error(self):
-        """
-        Returns last error that occurred in this thread while using
+    def get_last_error(self) -> CorsairError:
+        """Returns last error that occurred in this thread while using
         any of SDK functions.
         """
         return native.CorsairGetLastError()
 
-    def request_control(self):
-        """
-        Requests exclusive control over lighting.
-        By default client has shared control over lighting so there is no need
-        to call request_control() unless a client requires exclusive control.
+    def request_control(self) -> bool:
+        """Requests exclusive control over lighting.
+
+        By default client has shared control over lighting so there is
+        no need to call `CueSdk.request_control` unless a client
+        requires exclusive control.
         """
         return native.CorsairRequestControl(
             CorsairAccessMode.ExclusiveLightingControl)
 
-    def release_control(self):
-        """
-        Releases previously requested exclusive control.
-        """
+    def release_control(self) -> bool:
+        """Releases previously requested exclusive control."""
         return native.CorsairReleaseControl(
             CorsairAccessMode.ExclusiveLightingControl)
 
-    def set_layer_priority(self, priority):
-        """
-        Sets layer priority for this shared client.
+    def set_layer_priority(self, priority: int) -> bool:
+        """Sets layer priority for this shared client.
+
         By default CUE has priority of 127 and all shared clients have
         priority of 128 if they don't call this function. Layers with
         higher priority value are shown on top of layers with lower priority.
 
-        Parameters
-        ----------
-        priority : int
-            Priority of a layer [0..255]
+        Args:
+            priority: priority of a layer [0..255]
 
-        Returns
-        -------
-        boolean value. True if successful. Use get_last_error() to check the
-        reason of failure. If this function is called in exclusive mode
-        then it will return True
+        Returns:
+            boolean value. True if successful. Use `CueSdk.get_last_error`
+            to check the reason of failure. If this function is called in
+            exclusive mode then it will return True
         """
         return native.CorsairSetLayerPriority(priority)
 
-    def get_led_id_for_key_name(self, key_name):
-        """
-        Retrieves led id for key name taking logical layout into
-        account. So on AZERTY keyboards if user calls
-        get_led_id_for_key_name('A') he gets CorsairLedId.K_Q.
-        This id can be used in set_led_colors_buffer_by_device_index function
+    def get_led_id_for_key_name(self, key_name: str) -> CorsairLedId:
+        """Retrieves led id for key name taking logical layout into account.
 
-        Parameters
-        ----------
-        key_name : char
-            Key name. ['A'..'Z'] (26 values) are valid values
+        So on AZERTY keyboards if user calls `get_led_id_for_key_name('A')` he
+        gets `CorsairLedId.K_Q`. This id can be used in
+        `CueSdk.set_led_colors_buffer_by_device_index` function
 
-        Returns
-        -------
-        Proper CorsairLedId or CorsairLedId.Invalid if error occurred
+        Args:
+            key_name: key name. ['A'..'Z'] (26 values) are valid values
+
+        Returns:
+            Proper `CorsairLedId` or `CorsairLedId.Invalid` if error
+            occurred
         """
         return native.CorsairGetLedIdForKeyName(key_name)
 
-    def set_led_colors_buffer_by_device_index(self, device_index, colors):
-        """
-        Sets specified LEDs to some colors. This function set LEDs colors
-        in the buffer which is written to the devices via
-        set_led_colors_flush_buffer or set_led_colors_flush_buffer_async.
-        Typical usecase is next: set_led_colors_flush_buffer or
-        set_led_colors_flush_buffer_async is called to write LEDs colors to
-        the device and follows after one or more calls of
-        set_led_colors_buffer_by_device_index to set the LEDs buffer.
+    def set_led_colors_buffer_by_device_index(
+            self, device_index: int,
+            led_colors: Dict[CorsairLedId, Tuple[int, int, int]]) -> bool:
+        """Sets specified LEDs to some colors.
+
+        This function set LEDs colors in the buffer which is written to the
+        devices via `CueSdk.set_led_colors_flush_buffer` or
+        `CueSdk.set_led_colors_flush_buffer_async`.
+        Typical usecase is next: `CueSdk.set_led_colors_flush_buffer` or
+        `CueSdk.set_led_colors_flush_buffer_async` is called to write LEDs
+        colors to the device and follows after one or more calls of
+        `CueSdk.set_led_colors_buffer_by_device_index` to set the LEDs buffer.
         This function does not take logical layout into account.
 
-        Parameters
-        ----------
-        device_index : int
-            Zero-based index of device. Should be strictly less than value
-            returned by get_device_count()
-        colors : list
-            The list containing colors for each LED: each item is a list
-            with items [ledId, r, g, b]
-        """
-        sz = len(colors)
-        data = (CorsairLedColor * sz)()
-        for i, led in enumerate(colors):
-            c = CorsairLedColor()
-            c.ledId = led[0]
-            c.r = led[1]
-            c.g = led[2]
-            c.b = led[3]
-            data[i] = c
-        return native.CorsairSetLedsColorsBufferByDeviceIndex(
-                        device_index, sz, data)
+        Args:
+            device_index: zero-based index of device. Should be strictly less
+                than value returned by `CueSdk.get_device_count`
+            led_colors: a dict mapping `CorsairLedId` keys to the corresponding
+                color values. Each color is represented as a tuple of ints
+                (r, g, b). For example:
 
-    def set_led_colors_flush_buffer(self):
+            ```python
+            { CorsairLedId.K_F1: (255, 0, 0) }
+            ```
         """
-        Writes to the devices LEDs colors buffer which is previously filled by
-        the set_led_colors_buffer_by_device_index function. This function
-        executes synchronously, if you are concerned about delays consider
-        using set_led_colors_flush_buffer_async
+        sz = len(led_colors)
+        data = (CorsairLedColor * sz)()
+        rgb_keys = ['r', 'g', 'b']
+        for i, led in enumerate(led_colors):
+            rgb = dict(zip(rgb_keys, led_colors[led]))
+            data[i] = CorsairLedColor(ledId=led, **rgb)
+        return native.CorsairSetLedsColorsBufferByDeviceIndex(
+            device_index, sz, data)
+
+    def set_led_colors_flush_buffer(self) -> bool:
+        """Writes to the devices LEDs colors buffer which is previously filled
+        by the `CueSdk.set_led_colors_buffer_by_device_index` function.
+
+        This function executes synchronously, if you are concerned about
+        delays consider using `CueSdk.set_led_colors_flush_buffer_async`
         """
         return native.CorsairSetLedsColorsFlushBuffer()
 
-    def set_led_colors_flush_buffer_async(self):
-        """
-        Same as set_led_colors_flush_buffer but returns control to the caller
-        immediately
+    def set_led_colors_flush_buffer_async(self) -> bool:
+        """Same as 'CueSdk.set_led_colors_flush_buffer` but returns control to
+        the caller immediately
         """
         return native.CorsairSetLedsColorsFlushBufferAsync(None, None)
 
-    def get_led_colors_by_device_index(self, device_index, led_identifiers):
-        """
-        Gets current color for the list of requested LEDs.
+    def get_led_colors_by_device_index(
+        self, device_index: int, led_identifiers: Sequence[CorsairLedId]
+    ) -> Union[None, Dict[CorsairLedId, Tuple[int, int, int]]]:
+        """Gets current color for the requested LEDs.
+
         The color should represent the actual state of the hardware LED, which
         could be a combination of SDK and/or CUE input. This function works
         for keyboard, mouse, mousemat, headset, headset stand, DIY-devices,
         memory module and cooler.
 
-        Parameters
-        ----------
-        device_index : int
-            Zero-based index of device. Should be strictly less than value
-            returned by get_device_count()
+        Args:
+            device_index: zero-based index of device. Should be strictly less
+                than value returned by `CueSdk.get_device_count`
+            led_identifiers: the list of `CorsairLedId` values
 
-        led_identifiers : list
-            The list of CorsairLedId values
+        Returns:
+            A dict mapping `CorsairLedId` keys to the corresponding color
+            values. Each color is represented as a tuple of ints. For
+            example:
 
-        Returns
-        -------
-        The list of LED colors: each item is a list with items
-        [ledId, r, g, b]
+            ```python
+            {
+              CorsairLedId.K_Escape: (255, 0, 0),
+              CorsairLedId.K_F1: (128, 0, 128)
+            }
+            ```
+
+            If error occurred, the function returns None
         """
         sz = len(led_identifiers)
         data = (CorsairLedColor * sz)()
         for i in range(sz):
             data[i].ledId = led_identifiers[i]
         ok = native.CorsairGetLedsColorsByDeviceIndex(device_index, sz, data)
-        ret = []
+        if not ok:
+            return None
+        ret = {}
         for i in range(sz):
             c = data[i]
-            ret.append([c.ledId, c.r, c.g, c.b])
+            ret[c.ledId] = (c.r, c.g, c.b)
         return ret
 
-    def get_led_positions_by_device_index(self, device_index):
-        """
-        Provides list of keyboard, mouse, headset, mousemat, headset stand,
-        DIY-devices, memory module and cooler LEDs by its index with their
-        positions. Position could be either physical (only device-dependent)
+    def get_led_positions_by_device_index(
+        self, device_index: int
+    ) -> Union[None, Dict[CorsairLedId, Tuple[float, float]]]:
+        """Provides dictionary of keyboard, mouse, headset, mousemat,
+        headset stand, DIY-devices, memory module and cooler LEDs by its index
+        with their positions.
+
+        Position could be either physical (only device-dependent)
         or logical (depend on device as well as CUE settings).
 
-        Parameters
-        ----------
-        device_index : int
-            The index of the device
+        Args:
+            device_index: zero-based index of device. Should be strictly less
+                than value returned by `CueSdk.get_device_count`
 
-        Returns
-        -------
-        The list of positions: each item is a list with items [ledId, x, y]
+        Returns:
+            A dict mapping `CorsairLedId` keys to the corresponding LED
+            positions. Each position is represented as a tuple of floats.
+            For example:
+
+            ```python
+            { CorsairLedId.K_Escape: (77.0, 36.0) }
+            ```
+
+            If error occurred, the function returns None
         """
         leds = native.CorsairGetLedPositionsByDeviceIndex(device_index)
-        positions = []
+        if not leds:
+            return None
+        positions = {}
         for i in range(leds.contents.numberOfLed):
             p = leds.contents.pLedPosition[i]
-            positions.append([p.ledId, p.left, p.top])
+            positions[p.ledId] = (p.left, p.top)
         return positions
 
-    def subscribe_for_events(self, handler):
-        """
-        Parameters
-        ----------
-        handler : function
-            Callback function with two arguments: event_id and event_data
+    def subscribe_for_events(
+            self, handler: Callable[[CorsairEventId, Any], None]) -> bool:
+        """Registers a callback that will be called by SDK when some event
+        happened.
+
+        If client is already subscribed but calls this function again SDK
+        should use only last callback registered for sending notifications.
+
+        Args:
+            handler:
+                Callback function with two arguments: event_id and event_data
+
+        Returns:
+            boolean value. True if successful. Use `CueSdk.get_last_error`
+            to check the reason of failure.
         """
         if handler is None:
             return False
@@ -282,24 +301,32 @@ class CueSdk():
                 handler(id, e[0].deviceConnectionStatusChangedEvent[0])
             elif (id == CorsairEventId.KeyEvent):
                 handler(id, e[0].keyEvent[0])
+
         self.event_handler = native.EventHandler(raw_handler)
         return native.CorsairSubscribeForEvents(self.event_handler, None)
 
     def unsubscribe_from_events(self):
+        """Unregisters callback previously registered by
+        `CueSdk.subscribe_for_events` call
+
+        Returns:
+            boolean value. True if successful. Use `CueSdk.get_last_error`
+            to check the reason of failure.
+        """
         self.event_handler = None
         return native.CorsairUnsubscribeFromEvents()
 
     def get_property(self, device_index, property_id):
         if (property_id & CorsairDevicePropertyType.Boolean) != 0:
-            prop = ctypes.c_bool()
+            prop = c_bool()
             success = native.CorsairGetBoolPropertyValue(
-                device_index, property_id, ctypes.byref(prop))
+                device_index, property_id, byref(prop))
             if success:
                 return prop.value
         elif (property_id & CorsairDevicePropertyType.Int32) != 0:
-            prop = ctypes.c_int32()
+            prop = c_int32()
             success = native.CorsairGetInt32PropertyValue(
-                device_index, property_id, ctypes.byref(prop))
+                device_index, property_id, byref(prop))
             if success:
                 return prop.value
         return None

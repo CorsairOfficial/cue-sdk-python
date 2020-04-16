@@ -11,25 +11,26 @@ def read_keys(inputQueue):
 
 
 def get_available_leds():
-    colors = list()
+    leds = list()
     device_count = sdk.get_device_count()
     for device_index in range(device_count):
         led_positions = sdk.get_led_positions_by_device_index(device_index)
-        colors.append(list(map(lambda x: [x[0], 0, 0, 0], led_positions)))
-    return colors
+        leds.append(led_positions)
+    return leds
 
 
-def perform_pulse_effect(wave_duration, led_colors):
+def perform_pulse_effect(wave_duration, all_leds):
     time_per_frame = 25
     x = 0
-    cnt = len(led_colors)
+    cnt = len(all_leds)
     dx = time_per_frame / wave_duration
     while x < 2:
-        val = int((1 - pow(x - 1, 2)) * 255)
+        val = int((1 - (x - 1)**2) * 255)
         for di in range(cnt):
-            for led_color in led_colors[di]:
-                led_color[2] = val  # green
-            sdk.set_led_colors_buffer_by_device_index(di, led_colors[di])
+            device_leds = all_leds[di]
+            for led in device_leds:
+                device_leds[led] = (0, val, 0)  # green
+            sdk.set_led_colors_buffer_by_device_index(di, device_leds)
         sdk.set_led_colors_flush_buffer()
         time.sleep(time_per_frame / 1000)
         x += dx
@@ -39,8 +40,9 @@ def main():
     global sdk
     inputQueue = queue.Queue()
 
-    inputThread = threading.Thread(
-        target=read_keys, args=(inputQueue,), daemon=True)
+    inputThread = threading.Thread(target=read_keys,
+                                   args=(inputQueue, ),
+                                   daemon=True)
     inputThread.start()
     sdk = CueSdk()
     connected = sdk.connect()
@@ -51,7 +53,7 @@ def main():
 
     wave_duration = 500
     colors = get_available_leds()
-    if (len(colors) == 0):
+    if not colors:
         return
 
     print("Working... Use \"+\" or \"-\" to increase or decrease speed.\n" +
