@@ -8,8 +8,9 @@ def SdkEventHandler(event_id, data):
               (data.deviceId.decode(), data.keyId,
                "pressed" if data.isPressed else "released"))
     elif (event_id == CorsairEventId.DeviceConnectionStatusChangedEvent):
-        print(" Device id: %s\n    Status: %s" % (data.deviceId.decode(),
-              "connected" if data.isConnected else "disconnected"))
+        print(" Device id: %s\n    Status: %s" %
+              (data.deviceId.decode(),
+               "connected" if data.isConnected else "disconnected"))
     else:
         print("Invalid event!")
 
