@@ -195,7 +195,7 @@ class CueSdk(object):
         return native.CorsairSetLedsColorsFlushBuffer()
 
     def set_led_colors_flush_buffer_async(self) -> bool:
-        """Same as 'CueSdk.set_led_colors_flush_buffer` but returns control to
+        """Same as `CueSdk.set_led_colors_flush_buffer` but returns control to
         the caller immediately
         """
         return native.CorsairSetLedsColorsFlushBufferAsync(None, None)

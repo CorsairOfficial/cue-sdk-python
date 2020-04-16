@@ -44,5 +44,5 @@ print(sdk.get_devices())
 
 # Links
 
-- API reference: https://github.com/CorsairOfficial/cue-sdk-python/blob/master/api_reference.md
+- API reference: https://github.com/corsairofficial/cue-sdk-python/blob/master/api_reference.md
 - Code examples: https://github.com/corsairofficial/cue-sdk-python/tree/master/example
