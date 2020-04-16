@@ -1,18 +1,11 @@
 import ctypes
 
-__all__ = ['CorsairDeviceType',
-           'CorsairPhysicalLayout',
-           'CorsairLogicalLayout',
-           'CorsairDeviceCaps',
-           'CorsairAccessMode',
-           'CorsairError',
-           'CorsairChannelDeviceType',
-           'CorsairDevicePropertyType',
-           'CorsairDevicePropertyId',
-           'CorsairEventId',
-           'CorsairKeyId',
-           'CorsairLedId'
-           ]
+__all__ = [
+    'CorsairDeviceType', 'CorsairPhysicalLayout', 'CorsairLogicalLayout',
+    'CorsairDeviceCaps', 'CorsairAccessMode', 'CorsairError',
+    'CorsairChannelDeviceType', 'CorsairDevicePropertyType',
+    'CorsairDevicePropertyId', 'CorsairEventId', 'CorsairKeyId', 'CorsairLedId'
+]
 
 
 class EnumerationType(type(ctypes.c_uint)):
@@ -44,16 +37,23 @@ class Enumeration(ctypes.c_uint, metaclass=EnumerationType):
         return "<%s: %d>" % (self.__str__(), self.value)
 
     def __str__(self):
-        return "%s.%s" % (
-            self.__class__.__name__,
-            self._reverse_map_.get(self.value, '(unknown)')
-        )
+        return "%s.%s" % (self.__class__.__name__,
+                          self._reverse_map_.get(self.value, '(unknown)'))
+
+    def __hash__(self):
+        return self.value
 
     def __eq__(self, other):
         if isinstance(other, int):
             return self.value == other
 
         return type(self) == type(other) and self.value == other.value
+
+    def __lt__(self, other):
+        if isinstance(other, int):
+            return self.value < other
+
+        return type(self) == type(other) and self.value < other.value
 
 
 class CorsairDeviceType(Enumeration):
