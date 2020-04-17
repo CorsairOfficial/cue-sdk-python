@@ -149,7 +149,11 @@ class CueSdk(object):
             Proper `CorsairLedId` or `CorsairLedId.Invalid` if error
             occurred
         """
-        return native.CorsairGetLedIdForKeyName(key_name)
+        if not isinstance(key_name,
+                          str) or len(key_name) != 1 or not key_name.isalpha():
+            return CorsairLedId(CorsairLedId.Invalid)
+
+        return native.CorsairGetLedIdForKeyName(key_name.encode())
 
     def set_led_colors_buffer_by_device_index(
             self, device_index: int,
