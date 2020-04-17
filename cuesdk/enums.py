@@ -1,4 +1,4 @@
-import ctypes
+from ctypes import c_uint
 
 __all__ = [
     'CorsairDeviceType', 'CorsairPhysicalLayout', 'CorsairLogicalLayout',
@@ -8,29 +8,26 @@ __all__ = [
 ]
 
 
-class EnumerationType(type(ctypes.c_uint)):
-    def __new__(metacls, name, bases, dict):
-        if "_members_" not in dict:
+class EnumerationType(type(c_uint)):
+    def __new__(metacls, name, bases, dictcls):
+        if "_members_" not in dictcls:
             _members_ = {}
-            for key, value in dict.items():
+            for key, value in dictcls.items():
                 if not key.startswith("_"):
                     _members_[key] = value
 
-            dict["_members_"] = _members_
+            dictcls["_members_"] = _members_
         else:
-            _members_ = dict["_members_"]
+            _members_ = dictcls["_members_"]
 
-        dict["_reverse_map_"] = {v: k for k, v in _members_.items()}
-        cls = type(ctypes.c_uint).__new__(metacls, name, bases, dict)
-        for key, value in cls._members_.items():
-            globals()[key] = value
-        return cls
+        dictcls["_reverse_map_"] = {v: k for k, v in _members_.items()}
+        return type(c_uint).__new__(metacls, name, bases, dictcls)
 
     def __repr__(self):
         return "<Enumeration %s>" % self.__name__
 
 
-class Enumeration(ctypes.c_uint, metaclass=EnumerationType):
+class Enumeration(c_uint, metaclass=EnumerationType):
     _members_ = {}
 
     def __repr__(self):
