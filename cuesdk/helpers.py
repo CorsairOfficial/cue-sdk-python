@@ -32,11 +32,9 @@ class ColorRgb(object):
         return cls(*col)
 
     @classmethod
-    def from_hexstr(cls, hexstr):
-        val = int(hexstr, 16)
-        return cls(r=((val >> 16) & 0xff),
-                   g=((val >> 8) & 0xff),
-                   b=(val & 0xff))
+    def from_hexstr(cls, hexstr: str):
+        val = hexstr.lstrip('#').lower().replace('0x', '').rjust(6, '0')
+        return cls(*(int(val[i:i + 2], 16) for i in (0, 2, 4)))
 
     def __str__(self):
         return self.hex
