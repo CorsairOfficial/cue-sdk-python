@@ -17,7 +17,6 @@ def read_version(filename='cuesdk/version.py'):
         return version
 
 
-arch, exetype = platform.architecture()
 system = platform.system().lower()
 
 if not system == 'windows':
@@ -48,13 +47,14 @@ setup(
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     install_requires=[],
-    platforms=['win'],
     python_requires='>=3.5',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: MIT License',
+        'Operating System :: MacOS',
+        'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
