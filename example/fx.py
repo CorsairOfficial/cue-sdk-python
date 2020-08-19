@@ -5,7 +5,8 @@ from colorsys import hsv_to_rgb
 import time
 import math
 import operator
-import msvcrt
+import queue
+import threading
 
 
 def swirls2(env, px, py):
@@ -72,6 +73,12 @@ class DeviceFrame:
                 *fx(self.env, self.leds[key][0], self.leds[key][1])).rgb
 
 
+def read_keys(inputQueue):
+    while (True):
+        input_str = input()
+        inputQueue.put(input_str)
+
+
 def main():
     sdk = CueSdk()
     connected = sdk.connect()
@@ -92,12 +99,20 @@ def main():
     # list of effects
     fxs = [gradient, rainbow45, swirls2]
     fxi = 0
+
+    inputQueue = queue.Queue()
+    inputThread = threading.Thread(target=read_keys,
+                                   args=(inputQueue, ),
+                                   daemon=True)
+    inputThread.start()
+
     print("Working...\nPress \"q\" to close program\n"
           "Press any other key to switch between effects")
     while (True):
-        if msvcrt.kbhit():
-            key = msvcrt.getch().decode()
-            if key == "q" or key == "Q":
+        if (inputQueue.qsize() > 0):
+            input_str = inputQueue.get()
+
+            if input_str == "q" or input_str == "Q":
                 print("Exiting.")
                 break
             else:
