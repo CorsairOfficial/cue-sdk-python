@@ -1,12 +1,14 @@
-from cuesdk import CueSdk
-from cuesdk.helpers import ColorRgb
-from functools import reduce
+
 from colorsys import hsv_to_rgb
-import time
+from functools import reduce
 import math
 import operator
 import queue
+import time
 import threading
+
+from cuesdk import CueSdk
+from cuesdk.helpers import ColorRgb
 
 
 def swirls2(env, px, py):
@@ -19,6 +21,7 @@ def swirls2(env, px, py):
     r = math.sqrt(x**2 + y**2)
     angle = math.atan2(x, y) - math.sin(t) * r / 200 + t
     intensity = 0.5 + 0.25 * math.sin(15 * angle)
+
     return hsv_to_rgb(angle / math.pi, intensity, 1)
 
 
@@ -59,7 +62,7 @@ class DeviceFrame:
                 lambda acc, pt: (max(acc[0], pt[0]), max(acc[1], pt[1])),
                 leds.values(), (float('-inf'), float('-inf')))
             self.env = FxEnv(Resolution(max_by_x, max_by_y))
-            self.colors = {x: (0, 0, 0) for x in leds}
+            self.colors = dict.fromkeys(leds, (0, 0, 0))
             self.empty = False
         else:
             self.empty = True
@@ -67,16 +70,19 @@ class DeviceFrame:
     def update(self, frame_time, fx):
         if self.empty:
             return
+
         self.env.time = frame_time
         for key in self.colors:
             self.colors[key] = ColorRgb.from_vec3(
-                *fx(self.env, self.leds[key][0], self.leds[key][1])).rgb
+                *fx(self.env,
+                    self.leds[key][0],
+                    self.leds[key][1])).rgb
 
 
-def read_keys(inputQueue):
-    while (True):
+def read_keys(input_queue):
+    while True:
         input_str = input()
-        inputQueue.put(input_str)
+        input_queue.put(input_str)
 
 
 def main():
@@ -93,26 +99,27 @@ def main():
         led_positions = sdk.get_led_positions_by_device_index(device_index)
         frames.append(DeviceFrame(led_positions))
 
-    if (len(frames) == 0):
+    if not frames:
         return
 
-    # list of effects
+    # List of effects.
     fxs = [gradient, rainbow45, swirls2]
     fxi = 0
 
-    inputQueue = queue.Queue()
-    inputThread = threading.Thread(target=read_keys,
-                                   args=(inputQueue, ),
-                                   daemon=True)
-    inputThread.start()
+    input_queue = queue.Queue()
+    input_thread = threading.Thread(target=read_keys,
+                                    args=(input_queue, ),
+                                    daemon=True)
+    input_thread.start()
 
-    print("Working...\nPress \"q\" to close program\n"
+    print('Working...\nPress "q" to close program\n'
           "Press any other key to switch between effects")
-    while (True):
-        if (inputQueue.qsize() > 0):
-            input_str = inputQueue.get()
 
-            if input_str == "q" or input_str == "Q":
+    while True:
+        if input_queue.qsize() > 0:
+            input_str = input_queue.get()
+
+            if input_str.lower() == "q":
                 print("Exiting.")
                 break
             else:
@@ -122,9 +129,11 @@ def main():
         frame_time = time.time()
         for di in range(device_count):
             frame = frames[di]
+
             if not frame.empty:
                 frame.update(frame_time, fxs[fxi])
                 sdk.set_led_colors_buffer_by_device_index(di, frame.colors)
+
         sdk.set_led_colors_flush_buffer()
 
 
