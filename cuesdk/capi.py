@@ -19,16 +19,8 @@ def get_library_path_windows():
 
 
 def get_library_path_mac():
-    framework_path = [
-        os.path.join(os.environ['HOME'], 'Library/Frameworks'),
-        '/Library/Frameworks'
-    ]
-    lib_name = 'CUESDK.Framework/CUESDK'
-    for fp in framework_path:
-        lib_path = os.path.join(fp, lib_name)
-        if os.path.exists(lib_path):
-            return lib_path
-    return None
+    lib_name = 'libCUESDK.dylib'
+    return os.path.join(os.path.dirname(__file__), 'bin', lib_name)
 
 
 def load_library(library_path):

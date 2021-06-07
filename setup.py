@@ -19,7 +19,7 @@ def read_version(filename='cuesdk/version.py'):
 
 system = platform.system().lower()
 
-if not system == 'windows':
+if system not in ('windows', 'darwin'):
     msg = "{} system is not supported".format(system)
     raise RuntimeError(msg)
 
@@ -49,7 +49,7 @@ setup(
     install_requires=[],
     python_requires='>=3.5',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: MIT License',
@@ -60,6 +60,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Games/Entertainment',
         'Topic :: System :: Hardware'

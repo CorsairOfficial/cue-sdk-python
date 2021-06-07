@@ -1,5 +1,4 @@
-cue-sdk-python
-==============
+# cue-sdk-python
 
 [![PyPI license](https://img.shields.io/pypi/l/cuesdk.svg?style=for-the-badge)](https://pypi.org/project/cuesdk)
 [![PyPI version info](https://img.shields.io/pypi/v/cuesdk.svg?style=for-the-badge)](https://pypi.org/project/cuesdk)
@@ -27,14 +26,15 @@ This repository is dedicated for a `cuesdk` package on [PyPI](https://pypi.org/p
 - Python 3.5 or higher. Support for earlier versions of Python is not provided. Python 2.7 or lower is not supported.
 
 ## Windows:
+
 - iCUE for Windows https://www.corsair.com/icue
 - Microsoft Visual C++ Redistributable for Visual Studio 2017.
   - x86 https://aka.ms/vs/15/release/VC_redist.x86.exe
   - x64 https://aka.ms/vs/15/release/VC_redist.x64.exe
 
 ## macOS:
+
 - iCUE for macOS https://www.corsair.com/icue-mac
-- CUESDK for macOS. Download `CUESDK_3.0.xxx.dmg` from https://github.com/CorsairOfficial/cue-sdk/releases and install its contents (`CUESDK.framework`) in `/Library/Frameworks` or `~/Library/Framework`
 
 # Installing
 
@@ -44,6 +44,7 @@ You can install the package from [PyPI](https://pypi.org/project/cuesdk):
    # Windows
    $ py -3 -m pip install -U cuesdk
 ```
+
 ```sh
    # macOS
    $ python3 -m pip install -U cuesdk
