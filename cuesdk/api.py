@@ -12,6 +12,8 @@ from .utils import bytes_to_str_or_default
 
 __all__ = ['CueSdk']
 
+native = None
+
 
 class Device(object):
     def __init__(self, id, type, model, caps_mask, led_count, channels):
