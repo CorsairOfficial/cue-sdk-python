@@ -68,3 +68,4 @@ print(sdk.get_devices())
 
 - API reference: https://github.com/corsairofficial/cue-sdk-python/blob/master/api_reference.md
 - Code examples: https://github.com/corsairofficial/cue-sdk-python/tree/master/example
+- List of supported devices: https://corsairofficial.github.io/cue-sdk/#supported-devices
