@@ -149,7 +149,7 @@ class CorsairChannelDeviceType(Enumeration):
     Pump = 7
     QL_Fan = 8,
     WaterBlock = 9,
-    SPPRO_Fan = 10
+    Fan_8LedSeries = 10
 
 
 class CorsairDevicePropertyType(Enumeration):
