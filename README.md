@@ -23,7 +23,7 @@ This repository is dedicated for a `cuesdk` package on [PyPI](https://pypi.org/p
 
 # Prerequisites
 
-- Python 3.5 or higher. Support for earlier versions of Python is not provided. Python 2.7 or lower is not supported.
+- Python 3.7 or higher. Support for earlier versions of Python is not provided. Python 2.7 or lower is not supported.
 
 ## Windows:
 
