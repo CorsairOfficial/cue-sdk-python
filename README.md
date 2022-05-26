@@ -4,13 +4,13 @@
 [![PyPI version info](https://img.shields.io/pypi/v/cuesdk.svg?style=for-the-badge)](https://pypi.org/project/cuesdk)
 [![PyPI supported Python versions](https://img.shields.io/pypi/pyversions/cuesdk.svg?style=for-the-badge)](https://pypi.org/project/cuesdk)
 
-# Intro
+## Intro
 
 This repository is dedicated for a `cuesdk` package on [PyPI](https://pypi.org/project/cuesdk)
 
 `cuesdk` package is a `ctypes`-based CUE SDK binding for Python 3
 
-# Requirements
+## Requirements
 
 `cuesdk` can be used on the following platforms:
 
@@ -21,22 +21,22 @@ This repository is dedicated for a `cuesdk` package on [PyPI](https://pypi.org/p
 - macOS 10.14;
 - macOS 10.15.
 
-# Prerequisites
+## Prerequisites
 
 - Python 3.7 or higher. Support for earlier versions of Python is not provided. Python 2.7 or lower is not supported.
 
-## Windows:
+### Windows
 
-- iCUE for Windows https://www.corsair.com/icue
+- [iCUE for Windows](https://www.corsair.com/icue)
 - Microsoft Visual C++ Redistributable for Visual Studio 2017.
-  - x86 https://aka.ms/vs/15/release/VC_redist.x86.exe
-  - x64 https://aka.ms/vs/15/release/VC_redist.x64.exe
+  - x86 <https://aka.ms/vs/15/release/VC_redist.x86.exe>
+  - x64 <https://aka.ms/vs/15/release/VC_redist.x64.exe>
 
-## macOS:
+### macOS
 
-- iCUE for macOS https://www.corsair.com/icue-mac
+- [iCUE for macOS](https://www.corsair.com/icue-mac)
 
-# Installing
+## Installing
 
 You can install the package from [PyPI](https://pypi.org/project/cuesdk):
 
@@ -50,7 +50,7 @@ You can install the package from [PyPI](https://pypi.org/project/cuesdk):
    $ python3 -m pip install -U cuesdk
 ```
 
-# Usage
+## Usage
 
 ```python
 from cuesdk import CueSdk
@@ -64,8 +64,8 @@ print(sdk.get_devices())
 
 ```
 
-# Links
+## Links
 
-- API reference: https://github.com/corsairofficial/cue-sdk-python/blob/master/api_reference.md
-- Code examples: https://github.com/corsairofficial/cue-sdk-python/tree/master/example
-- List of supported devices: https://corsairofficial.github.io/cue-sdk/#supported-devices
+- API reference: <https://github.com/corsairofficial/cue-sdk-python/blob/master/api_reference.md>
+- Code examples: <https://github.com/corsairofficial/cue-sdk-python/tree/master/example>
+- List of supported devices: <https://corsairofficial.github.io/cue-sdk/#supported-devices>
