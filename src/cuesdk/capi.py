@@ -15,12 +15,12 @@ __all__ = ['CorsairNativeApi']
 def get_library_path_windows():
     suffix = '.x64' if sizeof(c_void_p) == 8 else ''
     lib_name = 'CUESDK' + suffix + '_2017.dll'
-    return os.path.join(os.path.dirname(__file__), 'bin', lib_name)
+    return os.path.join(sys.prefix, 'bin', lib_name)
 
 
 def get_library_path_mac():
     lib_name = 'libCUESDK.dylib'
-    return os.path.join(os.path.dirname(__file__), 'bin', lib_name)
+    return os.path.join(sys.prefix, 'bin', lib_name)
 
 
 def load_library(library_path):
@@ -32,6 +32,7 @@ def load_library(library_path):
 
 
 class CorsairNativeApi():
+
     def __init__(self, libpath):
         if libpath is None:
             system = platform.system()
