@@ -147,8 +147,8 @@ class CorsairChannelDeviceType(Enumeration):
     Strip = 5
     DAP = 6
     Pump = 7
-    QL_Fan = 8,
-    WaterBlock = 9,
+    QL_Fan = 8
+    WaterBlock = 9
     Fan_8LedSeries = 10
 
 
