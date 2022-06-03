@@ -1,26 +1,12 @@
-import os
-import platform
 import sys
-from ctypes import (CDLL, CFUNCTYPE, POINTER, sizeof, c_bool, c_char, c_int32,
+from ctypes import (CDLL, CFUNCTYPE, POINTER, c_bool, c_char, c_int32,
                     c_void_p)
-from .enums import (CorsairAccessMode, CorsairError, CorsairLedId,
-                    CorsairEventId, CorsairDevicePropertyId)
-from .structs import (CorsairProtocolDetails, CorsairDeviceInfo,
-                      CorsairLedPosition, CorsairLedPositions, CorsairLedColor,
-                      CorsairEvent)
+from ..enums import (CorsairAccessMode, CorsairError, CorsairLedId,
+                     CorsairDevicePropertyId)
+from . import (CorsairProtocolDetails, CorsairDeviceInfo, CorsairLedPositions,
+               CorsairLedColor, CorsairEvent)
 
 __all__ = ['CorsairNativeApi']
-
-
-def get_library_path_windows():
-    suffix = '.x64' if sizeof(c_void_p) == 8 else ''
-    lib_name = 'CUESDK' + suffix + '_2017.dll'
-    return os.path.join(sys.prefix, 'bin', lib_name)
-
-
-def get_library_path_mac():
-    lib_name = 'libCUESDK.dylib'
-    return os.path.join(sys.prefix, 'bin', lib_name)
 
 
 def load_library(library_path):
@@ -34,12 +20,6 @@ def load_library(library_path):
 class CorsairNativeApi():
 
     def __init__(self, libpath):
-        if libpath is None:
-            system = platform.system()
-            if system == "Windows":
-                libpath = get_library_path_windows()
-            elif system == "Darwin":
-                libpath = get_library_path_mac()
         lib = load_library(libpath)
 
         def create_func(fn, restype, argtypes):

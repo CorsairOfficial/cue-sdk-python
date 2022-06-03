@@ -1,49 +1,46 @@
-from ctypes import c_bool, c_int32, byref
+import os
+import platform
+from ctypes import c_bool, c_int32, c_void_p, byref, sizeof
 from typing import Any, Optional, Union, Callable, Dict, Sequence, Tuple
 
-from .capi import CorsairNativeApi
 from .enums import (CorsairAccessMode, CorsairError, CorsairDevicePropertyId,
                     CorsairDevicePropertyType, CorsairLedId, CorsairEventId)
-from .helpers import ColorRgb
-from .structs import (CorsairProtocolDetails, CorsairDeviceInfo,
-                      CorsairLedPosition, CorsairLedPositions, CorsairLedColor,
-                      CorsairEvent)
-from .utils import bytes_to_str_or_default
+from .structs import (CorsairEvent, CorsairLedPositions,
+                      CorsairProtocolDetails, CorsairDeviceInfo)
+from .native import CorsairNativeApi, CorsairLedColor
 
 __all__ = ['CueSdk']
 
-native = None
+napi: CorsairNativeApi = None
 
 
-class Device(object):
-    def __init__(self, id, type, model, caps_mask, led_count, channels):
-        self.id = id
-        self.type = type
-        self.model = model
-        self.caps_mask = caps_mask
-        self.led_count = led_count
-        self.channels = channels
-
-    def __repr__(self):
-        return self.model
+def get_library_path(lib_name):
+    return os.path.join(os.path.dirname(__file__), 'bin', lib_name)
 
 
-class Channel(object):
-    def __init__(self, total_led_count, devices):
-        self.total_led_count = total_led_count
-        self.devices = devices
+def get_library_path_windows():
+    suffix = '.x64' if sizeof(c_void_p) == 8 else ''
+    lib_name = 'CUESDK' + suffix + '_2017.dll'
+    return get_library_path(lib_name)
 
 
-class ChannelDevice(object):
-    def __init__(self, type, led_count):
-        self.type = type
-        self.led_count = led_count
+def get_library_path_mac():
+    lib_name = 'libCUESDK.dylib'
+    return get_library_path(lib_name)
 
 
 class CueSdk(object):
+
     def __init__(self, sdk_path: Optional[str] = None) -> None:
-        global native
-        native = CorsairNativeApi(sdk_path)
+        global napi
+        if sdk_path is None:
+            system = platform.system()
+            if system == "Windows":
+                sdk_path = get_library_path_windows()
+            elif system == "Darwin":
+                sdk_path = get_library_path_mac()
+        napi = CorsairNativeApi(sdk_path)
+        self._protocol_details = None
 
     def __enter__(self):
         return self
@@ -51,13 +48,18 @@ class CueSdk(object):
     def __exit__(self, type, value, traceback):
         pass
 
-    def connect(self):
-        self.protocol_details = native.CorsairPerformProtocolHandshake()
-        err = native.CorsairGetLastError()
+    def connect(self) -> bool:
+        details = napi.CorsairPerformProtocolHandshake()
+        self._protocol_details = CorsairProtocolDetails.create(details)
+        err = napi.CorsairGetLastError()
         return err == CorsairError.Success
 
+    @property
+    def protocol_details(self) -> CorsairProtocolDetails:
+        return self._protocol_details
+
     def get_devices(self):
-        cnt = native.CorsairGetDeviceCount()
+        cnt = napi.CorsairGetDeviceCount()
         if cnt > 0:
             return [self.get_device_info(i) for i in range(cnt)]
         return []
@@ -76,7 +78,7 @@ class CueSdk(object):
 
         Use `CueSdk.get_device_info` to get information about a certain device.
         """
-        return native.CorsairGetDeviceCount()
+        return napi.CorsairGetDeviceCount()
 
     def get_device_info(self, device_index: int):
         """Returns information about a device based on provided index.
@@ -85,25 +87,14 @@ class CueSdk(object):
             device_index: zero-based index of device. Should be strictly
                 less than a value returned by `CueSdk.get_device_count`
         """
-        p = native.CorsairGetDeviceInfo(device_index)
-        s = p.contents
-        channels = []
-        for chi in range(s.channels.channelsCount):
-            ch = s.channels.channels[chi]
-            devices = [
-                ChannelDevice(ch.devices[i].type, ch.devices[i].deviceLedCount)
-                for i in range(ch.devicesCount)
-            ]
-            channels.append(Channel(ch.totalLedsCount, devices))
-        return Device(bytes_to_str_or_default(s.deviceId), s.type,
-                      bytes_to_str_or_default(s.model), s.capsMask,
-                      s.ledsCount, channels)
+        p = napi.CorsairGetDeviceInfo(device_index)
+        return CorsairDeviceInfo.create(p)
 
     def get_last_error(self) -> CorsairError:
         """Returns last error that occurred in this thread while using
         any of SDK functions.
         """
-        return native.CorsairGetLastError()
+        return napi.CorsairGetLastError()
 
     def request_control(self) -> bool:
         """Requests exclusive control over lighting.
@@ -112,12 +103,12 @@ class CueSdk(object):
         no need to call `CueSdk.request_control` unless a client
         requires exclusive control.
         """
-        return native.CorsairRequestControl(
+        return napi.CorsairRequestControl(
             CorsairAccessMode.ExclusiveLightingControl)
 
     def release_control(self) -> bool:
         """Releases previously requested exclusive control."""
-        return native.CorsairReleaseControl(
+        return napi.CorsairReleaseControl(
             CorsairAccessMode.ExclusiveLightingControl)
 
     def set_layer_priority(self, priority: int) -> bool:
@@ -135,7 +126,7 @@ class CueSdk(object):
             to check the reason of failure. If this function is called in
             exclusive mode then it will return True
         """
-        return native.CorsairSetLayerPriority(priority)
+        return napi.CorsairSetLayerPriority(priority)
 
     def get_led_id_for_key_name(self, key_name: str) -> CorsairLedId:
         """Retrieves led id for key name taking logical layout into account.
@@ -155,7 +146,7 @@ class CueSdk(object):
                           str) or len(key_name) != 1 or not key_name.isalpha():
             return CorsairLedId(CorsairLedId.Invalid)
 
-        return native.CorsairGetLedIdForKeyName(key_name.encode())
+        return napi.CorsairGetLedIdForKeyName(key_name.encode())
 
     def set_led_colors_buffer_by_device_index(
             self, device_index: int,
@@ -188,7 +179,7 @@ class CueSdk(object):
         for i, led in enumerate(led_colors):
             rgb = dict(zip(rgb_keys, led_colors[led]))
             data[i] = CorsairLedColor(ledId=led, **rgb)
-        return native.CorsairSetLedsColorsBufferByDeviceIndex(
+        return napi.CorsairSetLedsColorsBufferByDeviceIndex(
             device_index, sz, data)
 
     def set_led_colors_flush_buffer(self) -> bool:
@@ -198,13 +189,13 @@ class CueSdk(object):
         This function executes synchronously, if you are concerned about
         delays consider using `CueSdk.set_led_colors_flush_buffer_async`
         """
-        return native.CorsairSetLedsColorsFlushBuffer()
+        return napi.CorsairSetLedsColorsFlushBuffer()
 
     def set_led_colors_flush_buffer_async(self) -> bool:
         """Same as `CueSdk.set_led_colors_flush_buffer` but returns control to
         the caller immediately
         """
-        return native.CorsairSetLedsColorsFlushBufferAsync(None, None)
+        return napi.CorsairSetLedsColorsFlushBufferAsync(None, None)
 
     def get_led_colors_by_device_index(
         self, device_index: int, led_identifiers: Sequence[CorsairLedId]
@@ -239,7 +230,7 @@ class CueSdk(object):
         data = (CorsairLedColor * sz)()
         for i in range(sz):
             data[i].ledId = led_identifiers[i]
-        ok = native.CorsairGetLedsColorsByDeviceIndex(device_index, sz, data)
+        ok = napi.CorsairGetLedsColorsByDeviceIndex(device_index, sz, data)
         if not ok:
             return None
         ret = {}
@@ -273,14 +264,10 @@ class CueSdk(object):
 
             If error occurred, the function returns None
         """
-        leds = native.CorsairGetLedPositionsByDeviceIndex(device_index)
+        leds = napi.CorsairGetLedPositionsByDeviceIndex(device_index)
         if not leds:
             return None
-        positions = {}
-        for i in range(leds.contents.numberOfLed):
-            p = leds.contents.pLedPosition[i]
-            positions[p.ledId] = (p.left, p.top)
-        return positions
+        return CorsairLedPositions.create(leds)
 
     def subscribe_for_events(
             self, handler: Callable[[CorsairEventId, Any], None]) -> bool:
@@ -302,14 +289,11 @@ class CueSdk(object):
             return False
 
         def raw_handler(ctx, e):
-            id = e[0].id
-            if (id == CorsairEventId.DeviceConnectionStatusChangedEvent):
-                handler(id, e[0].deviceConnectionStatusChangedEvent[0])
-            elif (id == CorsairEventId.KeyEvent):
-                handler(id, e[0].keyEvent[0])
+            evt = CorsairEvent.create(e)
+            handler(evt.id, evt.data)
 
-        self.event_handler = native.EventHandler(raw_handler)
-        return native.CorsairSubscribeForEvents(self.event_handler, None)
+        self.event_handler = napi.EventHandler(raw_handler)
+        return napi.CorsairSubscribeForEvents(self.event_handler, None)
 
     def unsubscribe_from_events(self):
         """Unregisters callback previously registered by
@@ -320,18 +304,20 @@ class CueSdk(object):
             to check the reason of failure.
         """
         self.event_handler = None
-        return native.CorsairUnsubscribeFromEvents()
+        return napi.CorsairUnsubscribeFromEvents()
 
-    def get_property(self, device_index, property_id):
+    def get_property(self, device_index: int,
+                     property_id: CorsairDevicePropertyId):
         if (property_id & CorsairDevicePropertyType.Boolean) != 0:
             prop = c_bool()
-            success = native.CorsairGetBoolPropertyValue(
-                device_index, property_id, byref(prop))
+            success = napi.CorsairGetBoolPropertyValue(device_index,
+                                                       property_id,
+                                                       byref(prop))
             if success:
                 return prop.value
         elif (property_id & CorsairDevicePropertyType.Int32) != 0:
             prop = c_int32()
-            success = native.CorsairGetInt32PropertyValue(
+            success = napi.CorsairGetInt32PropertyValue(
                 device_index, property_id, byref(prop))
             if success:
                 return prop.value
