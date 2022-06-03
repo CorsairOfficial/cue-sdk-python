@@ -5,12 +5,12 @@ def sdk_event_handler(event_id, data):
     print("Event: %s" % event_id)
     if (event_id == CorsairEventId.KeyEvent):
         print(" Device id: %s\n    Key id: %s\n Key state: %s" %
-              (data.deviceId.decode(), data.keyId,
-               "pressed" if data.isPressed else "released"))
+              (data.device_id, data.key_id,
+               "pressed" if data.is_pressed else "released"))
     elif (event_id == CorsairEventId.DeviceConnectionStatusChangedEvent):
         print(" Device id: %s\n    Status: %s" %
-              (data.deviceId.decode(),
-               "connected" if data.isConnected else "disconnected"))
+              (data.device_id,
+               "connected" if data.is_connected else "disconnected"))
     else:
         print("Invalid event!")
 

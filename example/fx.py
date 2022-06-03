@@ -1,13 +1,11 @@
-
 from colorsys import hsv_to_rgb
 from functools import reduce
 import math
-import operator
 import queue
 import time
 import threading
 
-from cuesdk import CueSdk
+from cuesdk import CueSdk, CorsairLedPositions
 from cuesdk.helpers import ColorRgb
 
 
@@ -43,20 +41,23 @@ def rainbow45(env, px, py):
 
 
 class Resolution:
+
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
 
 class FxEnv:
+
     def __init__(self, resolution, time=0):
         self.resolution = resolution
         self.time = time
 
 
 class DeviceFrame:
-    def __init__(self, leds):
-        self.leds = leds.copy()
+
+    def __init__(self, leds: CorsairLedPositions):
+        self.leds = leds
         if leds:
             max_by_x, max_by_y = reduce(
                 lambda acc, pt: (max(acc[0], pt[0]), max(acc[1], pt[1])),
@@ -74,9 +75,7 @@ class DeviceFrame:
         self.env.time = frame_time
         for key in self.colors:
             self.colors[key] = ColorRgb.from_vec3(
-                *fx(self.env,
-                    self.leds[key][0],
-                    self.leds[key][1])).rgb
+                *fx(self.env, self.leds[key][0], self.leds[key][1])).rgb
 
 
 def read_keys(input_queue):
