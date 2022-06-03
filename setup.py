@@ -1,6 +1,8 @@
 import os
 import platform
 import re
+import sys
+from distutils.sysconfig import get_python_lib
 from setuptools import setup, find_packages
 
 
@@ -23,7 +25,7 @@ if system not in ('windows', 'darwin'):
     raise RuntimeError(msg)
 
 
-def get_data_files(directory):
+def get_files(directory):
     files = [
         os.path.join(dirpath, filename)
         for (dirpath, _, filenames) in os.walk(directory)
@@ -32,11 +34,16 @@ def get_data_files(directory):
     return files
 
 
+def get_target_bin_path():
+    packages_dir = get_python_lib().replace(sys.prefix, '')[1:]
+    return os.path.join(packages_dir, 'cuesdk', 'bin')
+
+
 setup(name="cuesdk",
       version=read_version(),
       packages=find_packages('src'),
       package_dir={'': 'src'},
-      data_files=[('bin', get_data_files('bin'))],
+      data_files=[(get_target_bin_path(), get_files('bin'))],
       zip_safe=False,
       author='Corsair Memory, Inc.',
       license='MIT',
