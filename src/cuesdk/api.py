@@ -1,13 +1,15 @@
 import os
 import platform
 from ctypes import c_bool, c_int32, c_void_p, byref, sizeof
-from typing import Any, Optional, Union, Callable, Dict, Sequence, Tuple
+from typing import (Any, List, Collection, Mapping, Optional, Union, Callable,
+                    Tuple)
 
 from .enums import (CorsairAccessMode, CorsairError, CorsairDevicePropertyId,
                     CorsairDevicePropertyType, CorsairLedId, CorsairEventId)
-from .structs import (CorsairEvent, CorsairLedPositions,
-                      CorsairProtocolDetails, CorsairDeviceInfo)
-from .native import CorsairNativeApi, CorsairLedColor
+from .structs import (CorsairEvent, CorsairLedPositions, CorsairLedPosition,
+                      CorsairLedColor, CorsairProtocolDetails,
+                      CorsairDeviceInfo)
+from .native import CorsairNativeApi, CorsairLedColor as CorsairLedColorStruct
 
 __all__ = ['CueSdk']
 
@@ -51,7 +53,7 @@ class CueSdk(object):
     def connect(self) -> bool:
         details = napi.CorsairPerformProtocolHandshake()
         self._protocol_details = CorsairProtocolDetails.create(details)
-        err = napi.CorsairGetLastError()
+        err = self.get_last_error()
         return err == CorsairError.Success
 
     @property
@@ -94,7 +96,7 @@ class CueSdk(object):
         """Returns last error that occurred in this thread while using
         any of SDK functions.
         """
-        return napi.CorsairGetLastError()
+        return CorsairError(napi.CorsairGetLastError())
 
     def request_control(self) -> bool:
         """Requests exclusive control over lighting.
@@ -142,16 +144,18 @@ class CueSdk(object):
             Proper `CorsairLedId` or `CorsairLedId.Invalid` if error
             occurred
         """
-        if not isinstance(key_name,
-                          str) or len(key_name) != 1 or not key_name.isalpha():
+        if not isinstance(key_name, str):
+            raise TypeError("'key_name' argument must be a string")
+        encoded = key_name.encode()
+        if len(encoded) != 1 or not ord('A') <= encoded[0] <= ord('Z'):
             return CorsairLedId(CorsairLedId.Invalid)
 
-        return napi.CorsairGetLedIdForKeyName(key_name.encode())
+        return CorsairLedId(napi.CorsairGetLedIdForKeyName(encoded))
 
-    def set_led_colors_buffer_by_device_index(
+    def _set_led_colors_buffer_by_device_index(
             self, device_index: int,
-            led_colors: Dict[CorsairLedId, Tuple[int, int, int]]) -> bool:
-        """Sets specified LEDs to some colors.
+            led_colors: Mapping[CorsairLedId, Tuple[int, int, int]]) -> bool:
+        """DEPRECATED. Sets specified LEDs to some colors.
 
         This function set LEDs colors in the buffer which is written to the
         devices via `CueSdk.set_led_colors_flush_buffer` or
@@ -174,11 +178,40 @@ class CueSdk(object):
             ```
         """
         sz = len(led_colors)
-        data = (CorsairLedColor * sz)()
+        data = (CorsairLedColorStruct * sz)()
         rgb_keys = ['r', 'g', 'b']
         for i, led in enumerate(led_colors):
             rgb = dict(zip(rgb_keys, led_colors[led]))
-            data[i] = CorsairLedColor(ledId=led, **rgb)
+            data[i] = CorsairLedColorStruct(ledId=led, **rgb)
+        return napi.CorsairSetLedsColorsBufferByDeviceIndex(
+            device_index, sz, data)
+
+    def set_led_colors_buffer_by_device_index(
+            self, device_index: int,
+            led_colors: Collection[CorsairLedColor]) -> bool:
+        """Sets specified LEDs to some colors.
+
+        This function set LEDs colors in the buffer which is written to the
+        devices via `CueSdk.set_led_colors_flush_buffer` or
+        `CueSdk.set_led_colors_flush_buffer_async`.
+        Typical usecase is next: `CueSdk.set_led_colors_flush_buffer` or
+        `CueSdk.set_led_colors_flush_buffer_async` is called to write LEDs
+        colors to the device and follows after one or more calls of
+        `CueSdk.set_led_colors_buffer_by_device_index` to set the LEDs buffer.
+        This function does not take logical layout into account.
+
+        Args:
+            device_index: zero-based index of device. Should be strictly less
+                than value returned by `CueSdk.get_device_count`
+            led_colors: a list of `CorsairLedColor` elements.
+        """
+        sz = len(led_colors)
+        data = (CorsairLedColorStruct * sz)()
+        for i, led in enumerate(led_colors):
+            data[i] = CorsairLedColorStruct(ledId=int(led.led_id),
+                                            r=led.r,
+                                            g=led.g,
+                                            b=led.b)
         return napi.CorsairSetLedsColorsBufferByDeviceIndex(
             device_index, sz, data)
 
@@ -197,10 +230,10 @@ class CueSdk(object):
         """
         return napi.CorsairSetLedsColorsFlushBufferAsync(None, None)
 
-    def get_led_colors_by_device_index(
-        self, device_index: int, led_identifiers: Sequence[CorsairLedId]
-    ) -> Union[None, Dict[CorsairLedId, Tuple[int, int, int]]]:
-        """Gets current color for the requested LEDs.
+    def _get_led_colors_by_device_index(
+        self, device_index: int, led_identifiers: Collection[CorsairLedId]
+    ) -> Union[None, Mapping[CorsairLedId, Tuple[int, int, int]]]:
+        """DEPRECATED. Gets current color for the requested LEDs.
 
         The color should represent the actual state of the hardware LED, which
         could be a combination of SDK and/or CUE input. This function works
@@ -219,15 +252,15 @@ class CueSdk(object):
 
             ```python
             {
-              CorsairLedId.K_Escape: (255, 0, 0),
-              CorsairLedId.K_F1: (128, 0, 128)
+                CorsairLedId.K_Escape: (255, 0, 0),
+                CorsairLedId.K_F1: (128, 0, 128)
             }
             ```
 
             If error occurred, the function returns None
         """
         sz = len(led_identifiers)
-        data = (CorsairLedColor * sz)()
+        data = (CorsairLedColorStruct * sz)()
         for i in range(sz):
             data[i].ledId = led_identifiers[i]
         ok = napi.CorsairGetLedsColorsByDeviceIndex(device_index, sz, data)
@@ -239,9 +272,37 @@ class CueSdk(object):
             ret[c.ledId] = (c.r, c.g, c.b)
         return ret
 
+    def get_led_colors_by_device_index(
+        self, device_index: int, led_identifiers: Collection[CorsairLedId]
+    ) -> Union[None, List[CorsairLedColor]]:
+        """Gets current color for the requested LEDs.
+
+        The color should represent the actual state of the hardware LED, which
+        could be a combination of SDK and/or CUE input. This function works
+        for keyboard, mouse, mousemat, headset, headset stand, DIY-devices,
+        memory module and cooler.
+
+        Args:
+            device_index: zero-based index of device. Should be strictly less
+                than value returned by `CueSdk.get_device_count`
+            led_identifiers: the list of `CorsairLedId` values
+
+        Returns:
+            A list if `CorsairLedColor` elements.
+            If error occurred, the function returns None
+        """
+        sz = len(led_identifiers)
+        data = (CorsairLedColorStruct * sz)()
+        for i in range(sz):
+            data[i].ledId = int(led_identifiers[i])
+        ok = napi.CorsairGetLedsColorsByDeviceIndex(device_index, sz, data)
+        if not ok:
+            return None
+        return list([CorsairLedColor.create(data[i]) for i in range(sz)])
+
     def get_led_positions_by_device_index(
         self, device_index: int
-    ) -> Union[None, Dict[CorsairLedId, Tuple[float, float]]]:
+    ) -> Union[None, Mapping[CorsairLedPosition, Tuple[float, float]]]:
         """Provides dictionary of keyboard, mouse, headset, mousemat,
         headset stand, DIY-devices, memory module and cooler LEDs by its index
         with their positions.
@@ -308,17 +369,17 @@ class CueSdk(object):
 
     def get_property(self, device_index: int,
                      property_id: CorsairDevicePropertyId):
-        if (property_id & CorsairDevicePropertyType.Boolean) != 0:
+        pid = int(property_id)
+        if (pid & CorsairDevicePropertyType.Boolean) != 0:
             prop = c_bool()
-            success = napi.CorsairGetBoolPropertyValue(device_index,
-                                                       property_id,
+            success = napi.CorsairGetBoolPropertyValue(device_index, pid,
                                                        byref(prop))
             if success:
                 return prop.value
-        elif (property_id & CorsairDevicePropertyType.Int32) != 0:
+        elif (pid & CorsairDevicePropertyType.Int32) != 0:
             prop = c_int32()
             success = napi.CorsairGetInt32PropertyValue(
-                device_index, property_id, byref(prop))
+                device_index, pid, byref(prop))
             if success:
                 return prop.value
         return None
