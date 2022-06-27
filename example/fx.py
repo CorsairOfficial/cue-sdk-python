@@ -1,11 +1,12 @@
 from colorsys import hsv_to_rgb
 from functools import reduce
+from typing import Callable
 import math
 import queue
 import time
 import threading
 
-from cuesdk import CueSdk, CorsairLedPositions
+from cuesdk import CueSdk, CorsairLedPositions, CorsairLedColor
 from cuesdk.helpers import ColorRgb
 
 
@@ -63,19 +64,23 @@ class DeviceFrame:
                 lambda acc, pt: (max(acc[0], pt[0]), max(acc[1], pt[1])),
                 leds.values(), (float('-inf'), float('-inf')))
             self.env = FxEnv(Resolution(max_by_x, max_by_y))
-            self.colors = dict.fromkeys(leds, (0, 0, 0))
+            self.colors = list(
+                [CorsairLedColor(led, 0, 0, 0) for led in leds.keys()])
             self.empty = False
         else:
             self.empty = True
 
-    def update(self, frame_time, fx):
+    def update(self, frame_time, fx: Callable):
         if self.empty:
             return
 
         self.env.time = frame_time
-        for key in self.colors:
-            self.colors[key] = ColorRgb.from_vec3(
-                *fx(self.env, self.leds[key][0], self.leds[key][1])).rgb
+        for led_color in self.colors:
+            pos = self.leds[led_color.led_id]
+            c = ColorRgb.from_vec3(*fx(self.env, pos[0], pos[1]))
+            led_color.r = c.r
+            led_color.g = c.g
+            led_color.b = c.b
 
 
 def read_keys(input_queue):

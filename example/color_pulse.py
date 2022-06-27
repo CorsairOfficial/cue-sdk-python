@@ -1,9 +1,9 @@
-
 import queue
 import time
 import threading
 
 from cuesdk import CueSdk
+from cuesdk.structs import CorsairLedColor
 
 
 def read_keys(input_queue):
@@ -18,7 +18,9 @@ def get_available_leds():
 
     for device_index in range(device_count):
         led_positions = sdk.get_led_positions_by_device_index(device_index)
-        leds.append(led_positions)
+        led_colors = list(
+            [CorsairLedColor(led, 0, 0, 0) for led in led_positions.keys()])
+        leds.append(led_colors)
 
     return leds
 
@@ -34,7 +36,7 @@ def perform_pulse_effect(wave_duration, all_leds):
         for di in range(cnt):
             device_leds = all_leds[di]
             for led in device_leds:
-                device_leds[led] = (0, val, 0)  # Green.
+                led.g = val
 
             sdk.set_led_colors_buffer_by_device_index(di, device_leds)
 
