@@ -41,7 +41,8 @@ class CorsairChannelDeviceInfo():
 
     @staticmethod
     def create(nobj):
-        return CorsairChannelDeviceInfo(nobj.type, nobj.deviceLedCount)
+        return CorsairChannelDeviceInfo(CorsairChannelDeviceType(nobj.type),
+                                        nobj.deviceLedCount)
 
 
 @dataclass(frozen=True)
@@ -77,10 +78,12 @@ class CorsairDeviceInfo():
             for chi in range(s.channels.channelsCount)
         ]
 
-        return CorsairDeviceInfo(bytes_to_str_or_default(s.deviceId), s.type,
+        return CorsairDeviceInfo(bytes_to_str_or_default(s.deviceId),
+                                 CorsairDeviceType(s.type),
                                  bytes_to_str_or_default(s.model),
-                                 s.physicalLayout, s.logicalLayout, s.capsMask,
-                                 s.ledsCount, channels)
+                                 CorsairPhysicalLayout(s.physicalLayout),
+                                 CorsairLogicalLayout(s.logicalLayout),
+                                 s.capsMask, s.ledsCount, channels)
 
 
 @dataclass(frozen=True)
@@ -93,8 +96,8 @@ class CorsairLedPosition():
 
     @staticmethod
     def create(nobj):
-        return CorsairLedPosition(nobj.ledId, nobj.top, nobj.left, nobj.height,
-                                  nobj.width)
+        return CorsairLedPosition(CorsairLedId(nobj.ledId), nobj.top,
+                                  nobj.left, nobj.height, nobj.width)
 
 
 class CorsairLedPositions(Mapping):
@@ -133,7 +136,8 @@ class CorsairLedColor():
 
     @staticmethod
     def create(nobj):
-        return CorsairLedColor(nobj.ledId, nobj.r, nobj.g, nobj.b)
+        return CorsairLedColor(CorsairLedId(nobj.ledId), nobj.r, nobj.g,
+                               nobj.b)
 
 
 @dataclass(frozen=True)
@@ -155,23 +159,24 @@ class CorsairKeyEvent():
 
     @staticmethod
     def create(nobj):
-        return CorsairKeyEvent(nobj.deviceId.decode(), nobj.keyId,
-                               nobj.isPressed)
+        return CorsairKeyEvent(nobj.deviceId.decode(),
+                               CorsairKeyId(nobj.keyId), nobj.isPressed)
 
 
 @dataclass(frozen=True)
 class CorsairEvent():
-    id: str
+    id: CorsairEventId
     data: Union[CorsairKeyEvent, CorsairDeviceConnectionStatusChangedEvent]
 
     @staticmethod
     def create(nobj):
         e = nobj[0]
-        if (e.id == CorsairEventId.DeviceConnectionStatusChangedEvent):
+        id = CorsairEventId(e.id)
+        if (id == CorsairEventId.DeviceConnectionStatusChangedEvent):
             return CorsairEvent(
-                e.id,
+                id,
                 CorsairDeviceConnectionStatusChangedEvent.create(
                     e.deviceConnectionStatusChangedEvent[0]))
-        elif (e.id == CorsairEventId.KeyEvent):
-            return CorsairEvent(e.id, CorsairKeyEvent.create(e.keyEvent[0]))
-        raise ValueError("Unknown event id={id}".format(id=e.id))
+        elif (id == CorsairEventId.KeyEvent):
+            return CorsairEvent(id, CorsairKeyEvent.create(e.keyEvent[0]))
+        raise ValueError("Unknown event id={id}".format(id=id))

@@ -1,8 +1,6 @@
 import sys
 from ctypes import (CDLL, CFUNCTYPE, POINTER, c_bool, c_char, c_int32,
-                    c_void_p)
-from ..enums import (CorsairAccessMode, CorsairError, CorsairLedId,
-                     CorsairDevicePropertyId)
+                    c_uint32, c_void_p)
 from . import (CorsairProtocolDetails, CorsairDeviceInfo, CorsairLedPositions,
                CorsairLedColor, CorsairEvent)
 
@@ -15,6 +13,12 @@ def load_library(library_path):
     except OSError:
         print("Unable to load the library %s" % library_path)
         sys.exit()
+
+
+CorsairError = c_uint32
+CorsairLedId = c_uint32
+CorsairAccessMode = c_uint32
+CorsairDevicePropertyId = c_uint32
 
 
 class CorsairNativeApi():

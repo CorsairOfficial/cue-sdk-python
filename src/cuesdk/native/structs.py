@@ -22,8 +22,7 @@ class CorsairProtocolDetails(ctypes.Structure):
 
 
 class CorsairChannelDeviceInfo(ctypes.Structure):
-    _fields_ = [('type', CorsairChannelDeviceType),
-                ('deviceLedCount', ctypes.c_int32)]
+    _fields_ = [('type', ctypes.c_uint), ('deviceLedCount', ctypes.c_int32)]
 
 
 class CorsairChannelInfo(ctypes.Structure):
@@ -38,16 +37,16 @@ class CorsairChannelsInfo(ctypes.Structure):
 
 
 class CorsairDeviceInfo(ctypes.Structure):
-    _fields_ = [('type', CorsairDeviceType), ('model', ctypes.c_char_p),
-                ('physicalLayout', CorsairPhysicalLayout),
-                ('logicalLayout', CorsairLogicalLayout),
-                ('capsMask', ctypes.c_int32), ('ledsCount', ctypes.c_int32),
+    _fields_ = [('type', ctypes.c_uint), ('model', ctypes.c_char_p),
+                ('physicalLayout', ctypes.c_uint),
+                ('logicalLayout', ctypes.c_uint), ('capsMask', ctypes.c_int32),
+                ('ledsCount', ctypes.c_int32),
                 ('channels', CorsairChannelsInfo),
                 ('deviceId', ctypes.c_char * CORSAIR_DEVICE_ID_MAX)]
 
 
 class CorsairLedPosition(ctypes.Structure):
-    _fields_ = [('ledId', CorsairLedId), ('top', ctypes.c_double),
+    _fields_ = [('ledId', ctypes.c_uint), ('top', ctypes.c_double),
                 ('left', ctypes.c_double), ('height', ctypes.c_double),
                 ('width', ctypes.c_double)]
 
@@ -58,7 +57,7 @@ class CorsairLedPositions(ctypes.Structure):
 
 
 class CorsairLedColor(ctypes.Structure):
-    _fields_ = [('ledId', CorsairLedId), ('r', ctypes.c_int32),
+    _fields_ = [('ledId', ctypes.c_uint), ('r', ctypes.c_int32),
                 ('g', ctypes.c_int32), ('b', ctypes.c_int32)]
 
 
@@ -69,7 +68,7 @@ class CorsairDeviceConnectionStatusChangedEvent(ctypes.Structure):
 
 class CorsairKeyEvent(ctypes.Structure):
     _fields_ = [('deviceId', ctypes.c_char * CORSAIR_DEVICE_ID_MAX),
-                ('keyId', CorsairKeyId), ('isPressed', ctypes.c_bool)]
+                ('keyId', ctypes.c_uint), ('isPressed', ctypes.c_bool)]
 
 
 class CorsairEventPayload(ctypes.Union):
@@ -80,4 +79,4 @@ class CorsairEventPayload(ctypes.Union):
 
 class CorsairEvent(ctypes.Structure):
     _anonymous_ = ("payload", )
-    _fields_ = [('id', CorsairEventId), ('payload', CorsairEventPayload)]
+    _fields_ = [('id', ctypes.c_uint), ('payload', CorsairEventPayload)]

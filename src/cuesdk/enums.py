@@ -1,5 +1,3 @@
-from ctypes import c_uint
-
 __all__ = [
     'CorsairDeviceType', 'CorsairPhysicalLayout', 'CorsairLogicalLayout',
     'CorsairDeviceCaps', 'CorsairAccessMode', 'CorsairError',
@@ -8,36 +6,44 @@ __all__ = [
 ]
 
 
-class EnumerationType(type(c_uint)):
-    def __new__(metacls, name, bases, dictcls):
-        if "_members_" not in dictcls:
-            _members_ = {}
-            for key, value in dictcls.items():
-                if not key.startswith("_"):
-                    _members_[key] = value
+class EnumerationType(type):
 
-            dictcls["_members_"] = _members_
+    def __new__(metacls, name, bases, namespace):
+        if "_members_" not in namespace:
+            _members_ = {
+                k: v
+                for k, v in namespace.items() if not k.startswith("_")
+            }
+            namespace["_members_"] = _members_
         else:
-            _members_ = dictcls["_members_"]
+            _members_ = namespace["_members_"]
 
-        dictcls["_reverse_map_"] = {v: k for k, v in _members_.items()}
-        return type(c_uint).__new__(metacls, name, bases, dictcls)
+        namespace["_reverse_map_"] = {v: k for k, v in _members_.items()}
+        return super().__new__(metacls, name, bases, namespace)
 
     def __repr__(self):
         return "<Enumeration %s>" % self.__name__
 
 
-class Enumeration(c_uint, metaclass=EnumerationType):
-    _members_ = {}
+class Enumeration(metaclass=EnumerationType):
+
+    def __init__(self, value):
+        if value not in self._reverse_map_:
+            raise ValueError("%d is not a valid value for %s" %
+                             (value, type(self).__name__))
+        self.value = value
 
     def __repr__(self):
         return "<%s: %d>" % (self.__str__(), self.value)
 
     def __str__(self):
-        return "%s.%s" % (self.__class__.__name__,
+        return "%s.%s" % (type(self).__name__,
                           self._reverse_map_.get(self.value, '(unknown)'))
 
     def __hash__(self):
+        return self.value
+
+    def __int__(self):
         return self.value
 
     def __eq__(self, other):
