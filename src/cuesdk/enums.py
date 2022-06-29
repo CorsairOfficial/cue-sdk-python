@@ -72,6 +72,7 @@ class CorsairDeviceType(Enumeration):
     Cooler = 9
     Motherboard = 10
     GraphicsCard = 11
+    Touchbar = 12
 
 
 class CorsairPhysicalLayout(Enumeration):
