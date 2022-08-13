@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from collections.abc import Mapping
-from typing import Tuple, Union
+from typing import Tuple, Union, List
 from .enums import (CorsairEventId, CorsairKeyId, CorsairLedId,
                     CorsairDeviceType, CorsairChannelDeviceType,
                     CorsairPhysicalLayout, CorsairLogicalLayout)
@@ -48,7 +48,7 @@ class CorsairChannelDeviceInfo():
 @dataclass(frozen=True)
 class CorsairChannelInfo():
     total_led_count: int
-    devices: list[CorsairChannelDeviceInfo]
+    devices: List[CorsairChannelDeviceInfo]
 
     @staticmethod
     def create(nobj):
@@ -68,7 +68,7 @@ class CorsairDeviceInfo():
     logical_layout: CorsairLogicalLayout
     caps_mask: int
     led_count: int
-    channels: list[CorsairChannelInfo]
+    channels: List[CorsairChannelInfo]
 
     @staticmethod
     def create(nobj):
