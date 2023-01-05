@@ -17,20 +17,22 @@ This repository is dedicated for a `cuesdk` package on [PyPI](https://pypi.org/p
 - Windows 7 (32-bit and 64-bit);
 - Windows 8, 8.1 (32-bit and 64-bit);
 - Windows 10 (32-bit and 64-bit);
+- Windows 11 (32-bit and 64-bit);
 - macOS 10.13;
 - macOS 10.14;
-- macOS 10.15.
+- macOS 10.15;
+- macOS 11;
 
 ## Prerequisites
 
-- Python 3.7 or higher. Support for earlier versions of Python is not provided. Python 2.7 or lower is not supported.
+- Python 3.9 or higher. Support for earlier versions of Python is not provided. Python 2.7 or lower is not supported.
 
 ### Windows
 
 - [iCUE for Windows](https://www.corsair.com/icue)
-- Microsoft Visual C++ Redistributable for Visual Studio 2017.
-  - x86 <https://aka.ms/vs/15/release/VC_redist.x86.exe>
-  - x64 <https://aka.ms/vs/15/release/VC_redist.x64.exe>
+- Microsoft Visual C++ Redistributable for Visual Studio 2019.
+  - x86 <https://aka.ms/vs/17/release/vc_redist.x86.exe>
+  - x64 <https://aka.ms/vs/17/release/vc_redist.x64.exe>
 
 ### macOS
 
@@ -53,19 +55,22 @@ You can install the package from [PyPI](https://pypi.org/project/cuesdk):
 ## Usage
 
 ```python
-from cuesdk import CueSdk
+from cuesdk import (CueSdk, CorsairDeviceFilter, CorsairDeviceType, CorsairError)
 
 sdk = CueSdk()
-sdk.connect()
 
-print(sdk.protocol_details)
+def on_state_changed(evt):
+   print(evt.state)
 
-print(sdk.get_devices())
+err = sdk.connect(on_state_changed)
+
+details, err = sdk.get_session_details()
+print(details)
+
+devices, err = sdk.get_devices(
+        CorsairDeviceFilter(device_type_mask=CorsairDeviceType.CDT_Keyboard))
+if err == CorsairError.CE_Success:
+   for d in devices:
+      print(sdk.get_device_info(d.device_id))
 
 ```
-
-## Links
-
-- API reference: <https://github.com/corsairofficial/cue-sdk-python/blob/master/api_reference.md>
-- Code examples: <https://github.com/corsairofficial/cue-sdk-python/tree/master/example>
-- List of supported devices: <https://corsairofficial.github.io/cue-sdk/#supported-devices>

@@ -1,15 +1,14 @@
 from dataclasses import dataclass
-from collections.abc import Mapping
-from typing import Tuple, Union, List
-from .enums import (CorsairEventId, CorsairKeyId, CorsairLedId,
-                    CorsairDeviceType, CorsairChannelDeviceType,
-                    CorsairPhysicalLayout, CorsairLogicalLayout)
+from typing import Union
+from .enums import (CorsairDataType, CorsairEventId, CorsairDeviceType,
+                    CorsairMacroKeyId, CorsairSessionState)
 
 __all__ = [
-    'CorsairProtocolDetails', 'CorsairChannelDeviceInfo', 'CorsairChannelInfo',
-    'CorsairDeviceInfo', 'CorsairLedPosition', 'CorsairLedPositions',
-    'CorsairLedColor', 'CorsairEvent', 'CorsairKeyEvent',
-    'CorsairDeviceConnectionStatusChangedEvent'
+    'CorsairVersion', 'CorsairSessionDetails', 'CorsairSessionStateChanged',
+    'CorsairDeviceInfo', 'CorsairLedPosition', 'CorsairDeviceFilter',
+    'CorsairDeviceConnectionStatusChangedEvent', 'CorsairKeyEvent',
+    'CorsairEvent', 'CorsairLedColor', 'CorsairKeyEventConfiguration',
+    'CorsairProperty'
 ]
 
 
@@ -18,126 +17,78 @@ def bytes_to_str_or_default(bytes_arg, default=""):
 
 
 @dataclass(frozen=True)
-class CorsairProtocolDetails():
-    sdk_version: str
-    server_version: str
-    sdk_protocol_version: int
-    server_protocol_version: int
-    breaking_changes: bool
+class CorsairVersion():
+    major: int
+    minor: int
+    patch: int
 
     @staticmethod
     def create(nobj):
-        return CorsairProtocolDetails(
-            bytes_to_str_or_default(nobj.sdkVersion),
-            bytes_to_str_or_default(nobj.serverVersion),
-            nobj.sdkProtocolVersion, nobj.serverProtocolVersion,
-            nobj.breakingChanges)
+        return CorsairVersion(nobj.major, nobj.minor, nobj.patch)
 
 
 @dataclass(frozen=True)
-class CorsairChannelDeviceInfo():
-    type: CorsairChannelDeviceType
-    led_count: int
+class CorsairSessionDetails():
+    client_version: CorsairVersion
+    server_version: CorsairVersion
+    server_host_version: CorsairVersion
 
     @staticmethod
     def create(nobj):
-        return CorsairChannelDeviceInfo(CorsairChannelDeviceType(nobj.type),
-                                        nobj.deviceLedCount)
+        return CorsairSessionDetails(
+            CorsairVersion.create(nobj.clientVersion),
+            CorsairVersion.create(nobj.serverVersion),
+            CorsairVersion.create(nobj.serverHostVersion))
 
 
 @dataclass(frozen=True)
-class CorsairChannelInfo():
-    total_led_count: int
-    devices: List[CorsairChannelDeviceInfo]
+class CorsairSessionStateChanged():
+    state: CorsairSessionState
+    details: CorsairSessionDetails
 
     @staticmethod
     def create(nobj):
-        devices = [
-            CorsairChannelDeviceInfo.create(nobj.devices[i])
-            for i in range(nobj.devicesCount)
-        ]
-        return CorsairChannelInfo(nobj.totalLedsCount, devices)
+        return CorsairSessionStateChanged(
+            CorsairSessionState(nobj.state),
+            CorsairSessionDetails.create(nobj.details))
 
 
 @dataclass(frozen=True)
 class CorsairDeviceInfo():
-    id: str
     type: CorsairDeviceType
+    device_id: str
+    serial: str
     model: str
-    physical_layout: CorsairPhysicalLayout
-    logical_layout: CorsairLogicalLayout
-    caps_mask: int
     led_count: int
-    channels: List[CorsairChannelInfo]
+    channel_count: int
 
     @staticmethod
     def create(nobj):
-        s = nobj.contents
-        channels = [
-            CorsairChannelInfo.create(s.channels.channels[chi])
-            for chi in range(s.channels.channelsCount)
-        ]
-
-        return CorsairDeviceInfo(bytes_to_str_or_default(s.deviceId),
-                                 CorsairDeviceType(s.type),
-                                 bytes_to_str_or_default(s.model),
-                                 CorsairPhysicalLayout(s.physicalLayout),
-                                 CorsairLogicalLayout(s.logicalLayout),
-                                 s.capsMask, s.ledsCount, channels)
+        return CorsairDeviceInfo(CorsairDeviceType(nobj.type),
+                                 bytes_to_str_or_default(nobj.deviceId),
+                                 bytes_to_str_or_default(nobj.serial),
+                                 bytes_to_str_or_default(nobj.model),
+                                 nobj.ledCount, nobj.channelCount)
 
 
 @dataclass(frozen=True)
 class CorsairLedPosition():
-    led_id: CorsairLedId
-    top: float
-    left: float
-    height: float
-    width: float
+    id: int
+    cx: float
+    cy: float
 
     @staticmethod
     def create(nobj):
-        return CorsairLedPosition(CorsairLedId(nobj.ledId), nobj.top,
-                                  nobj.left, nobj.height, nobj.width)
+        return CorsairLedPosition(nobj.id, nobj.cx, nobj.cy)
 
 
-class CorsairLedPositions(Mapping):
-
-    def __init__(self, items=None) -> None:
-        self._items = dict(items) if items is not None else dict()
-
-    def __repr__(self) -> str:
-        return "{type}({arg})".format(
-            type=type(self).__name__,
-            arg=repr(self._items) if self._items else "")
-
-    def __len__(self) -> int:
-        return len(self._items)
-
-    def __getitem__(self, led_id: CorsairLedId) -> Tuple[float, float]:
-        return self._items[led_id]
-
-    def __iter__(self):
-        return iter(self._items)
-
-    def create(nobj):
-        positions = dict()
-        for i in range(nobj.contents.numberOfLed):
-            p = CorsairLedPosition.create(nobj.contents.pLedPosition[i])
-            positions[p.led_id] = (p.left, p.top)
-        return CorsairLedPositions(positions)
-
-
-@dataclass
-class CorsairLedColor():
-    led_id: CorsairLedId
-    r: int
-    g: int
-    b: int
+@dataclass(frozen=True)
+class CorsairDeviceFilter():
+    device_type_mask: int
 
     @staticmethod
     def create(nobj):
-        return CorsairLedColor(CorsairLedId(nobj.ledId), nobj.r, nobj.g,
-                               nobj.b)
+        return CorsairDeviceFilter(nobj.deviceTypeMask)
 
 
 @dataclass(frozen=True)
@@ -148,19 +99,19 @@ class CorsairDeviceConnectionStatusChangedEvent():
     @staticmethod
     def create(nobj):
         return CorsairDeviceConnectionStatusChangedEvent(
-            nobj.deviceId.decode(), nobj.isConnected)
+            bytes_to_str_or_default(nobj.deviceId), nobj.isConnected)
 
 
 @dataclass(frozen=True)
 class CorsairKeyEvent():
     device_id: str
-    key_id: CorsairKeyId
+    key_id: CorsairMacroKeyId
     is_pressed: bool
 
     @staticmethod
     def create(nobj):
-        return CorsairKeyEvent(nobj.deviceId.decode(),
-                               CorsairKeyId(nobj.keyId), nobj.isPressed)
+        return CorsairKeyEvent(bytes_to_str_or_default(nobj.deviceId),
+                               CorsairMacroKeyId(nobj.keyId), nobj.isPressed)
 
 
 @dataclass(frozen=True)
@@ -170,13 +121,72 @@ class CorsairEvent():
 
     @staticmethod
     def create(nobj):
-        e = nobj[0]
+        e = nobj
         id = CorsairEventId(e.id)
-        if (id == CorsairEventId.DeviceConnectionStatusChangedEvent):
+        if (id == CorsairEventId.CEI_DeviceConnectionStatusChangedEvent):
             return CorsairEvent(
                 id,
                 CorsairDeviceConnectionStatusChangedEvent.create(
                     e.deviceConnectionStatusChangedEvent[0]))
-        elif (id == CorsairEventId.KeyEvent):
+        elif (id == CorsairEventId.CEI_KeyEvent):
             return CorsairEvent(id, CorsairKeyEvent.create(e.keyEvent[0]))
-        raise ValueError("Unknown event id={id}".format(id=id))
+        raise ValueError(f"Unknown event id={id}")
+
+
+@dataclass
+class CorsairLedColor():
+    id: int
+    r: int
+    g: int
+    b: int
+    a: int
+
+    @staticmethod
+    def create(nobj):
+        return CorsairLedColor(nobj.id, nobj.r, nobj.g, nobj.b, nobj.a)
+
+
+@dataclass(frozen=True)
+class CorsairKeyEventConfiguration():
+    key_id: CorsairMacroKeyId
+    is_intercepted: bool
+
+    @staticmethod
+    def create(nobj):
+        return CorsairKeyEventConfiguration(CorsairMacroKeyId(nobj.keyId),
+                                            nobj.isIntercepted)
+
+
+@dataclass(frozen=True)
+class CorsairProperty():
+    type: CorsairDataType
+    value: Union[bool, int, float, str, tuple]
+
+    @staticmethod
+    def create(nobj):
+        t = CorsairDataType(nobj.type)
+        if t == CorsairDataType.CT_Boolean:
+            return CorsairProperty(nobj.value.boolean)
+        if t == CorsairDataType.CT_Int32:
+            return CorsairProperty(t, nobj.value.int32)
+        if t == CorsairDataType.CT_Float64:
+            return CorsairProperty(t, nobj.value.float64)
+        if t == CorsairDataType.CT_String:
+            return CorsairProperty(t, nobj.value.string)
+        if t == CorsairDataType.CT_Boolean_Array:
+            items = tuple(nobj.value.boolean_array.items[i]
+                          for i in range(nobj.value.boolean_array.count))
+            return CorsairProperty(t, items)
+        if t == CorsairDataType.CT_Int32_Array:
+            items = tuple(nobj.value.int32_array.items[i]
+                          for i in range(nobj.value.int32_array.count))
+            return CorsairProperty(t, items)
+        if t == CorsairDataType.CT_Float64_Array:
+            items = tuple(nobj.value.float64_array.items[i]
+                          for i in range(nobj.value.float64_array.count))
+            return CorsairProperty(t, items)
+        if t == CorsairDataType.CT_String_Array:
+            items = tuple(nobj.value.string_array.items[i]
+                          for i in range(nobj.value.string_array.count))
+            return CorsairProperty(t, items)
+        raise ValueError(f"Unknown data type={t}")
