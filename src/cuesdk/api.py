@@ -2,7 +2,7 @@ import os
 import platform
 from ctypes import (c_int32, c_uint32, c_void_p, byref, sizeof,
                     create_string_buffer)
-from typing import (Any, List, Collection, Mapping, Optional, Union, Callable)
+from typing import (Any, Collection, Sequence, Optional, Callable)
 
 from .enums import (CorsairAccessLevel, CorsairDataType, CorsairError,
                     CorsairDevicePropertyId)
@@ -23,7 +23,7 @@ from .native import (
 
 __all__ = ['CueSdk']
 
-napi: CorsairNativeApi = None
+napi: CorsairNativeApi
 
 
 def get_library_path(lib_name):
@@ -101,7 +101,7 @@ class CueSdk(object):
 
     def get_devices(self, device_filter: CorsairDeviceFilter):
         if not device_filter:
-            return CorsairError(CorsairError.CE_InvalidArguments)
+            return (None, CorsairError(CorsairError.CE_InvalidArguments))
 
         df = CorsairDeviceFilterNative(
             deviceTypeMask=device_filter.device_type_mask)
@@ -233,7 +233,7 @@ class CueSdk(object):
         return CorsairError(
             napi.CorsairRequestControl(to_native_id(device_id), access_level))
 
-    def release_control(self, device_id: str = None) -> CorsairError:
+    def release_control(self, device_id: Optional[str]) -> CorsairError:
         return CorsairError(napi.CorsairReleaseControl(
             to_native_id(device_id)))
 
@@ -292,7 +292,7 @@ class CueSdk(object):
 
     def set_led_colors_flush_buffer_async(
             self,
-            callback: Callable[[CorsairError], None] = None) -> CorsairError:
+            callback: Optional[Callable[[CorsairError], None]]) -> CorsairError:
         if not callback:
             return CorsairError(
                 napi.CorsairSetLedColorsFlushBufferAsync(None, None))
@@ -307,7 +307,7 @@ class CueSdk(object):
             napi.CorsairSetLedColorsFlushBufferAsync(async_callback, None))
 
     def get_led_colors(self, device_id: str,
-                       led_colors: Collection[CorsairLedColor]):
+                       led_colors: Sequence[CorsairLedColor]):
         if not device_id:
             return (None, CorsairError(CorsairError.CE_InvalidArguments))
 
