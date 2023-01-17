@@ -166,7 +166,7 @@ class CorsairProperty():
     def create(nobj):
         t = CorsairDataType(nobj.type)
         if t == CorsairDataType.CT_Boolean:
-            return CorsairProperty(nobj.value.boolean)
+            return CorsairProperty(t, nobj.value.boolean)
         if t == CorsairDataType.CT_Int32:
             return CorsairProperty(t, nobj.value.int32)
         if t == CorsairDataType.CT_Float64:
