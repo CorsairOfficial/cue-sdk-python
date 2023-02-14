@@ -193,7 +193,7 @@ class CueSdk(object):
 
         res = None
         if err == CorsairError.CE_Success:
-            res = {'data_type': CorsairDataType(dt.value), 'flags': flags}
+            res = {'data_type': CorsairDataType(dt.value), 'flags': flags.value}
 
         return (res, err)
 
@@ -245,16 +245,18 @@ class CueSdk(object):
 
     def get_led_luid_for_key_name(self, device_id: str, key_name: str):
         if not device_id or not isinstance(key_name, str):
-            return (0, CorsairError(CorsairError.CE_InvalidArguments))
+            return (None, CorsairError(CorsairError.CE_InvalidArguments))
 
         encoded = key_name.encode()
         if len(encoded) != 1 or not ord('A') <= encoded[0] <= ord('Z'):
-            return (0, CorsairError(CorsairError.CE_InvalidArguments))
+            return (None, CorsairError(CorsairError.CE_InvalidArguments))
         luid = c_uint32()
         err = CorsairError(
             napi.CorsairGetLedLuidForKeyName(to_native_id(device_id), encoded,
                                              byref(luid)))
-        return (int(luid), err)
+        if (err == CorsairError.CE_Success):
+            return (int(luid.value), err)
+        return (None, err)
 
     def set_led_colors(
             self, device_id: str,
