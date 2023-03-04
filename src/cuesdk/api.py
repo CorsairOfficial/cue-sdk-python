@@ -290,7 +290,7 @@ class CueSdk(object):
                                             b=led.b,
                                             a=led.a)
         return CorsairError(napi.CorsairSetLedColorsBuffer(
-            device_id, sz, data))
+            to_native_id(device_id), sz, data))
 
     def set_led_colors_flush_buffer_async(
             self,
