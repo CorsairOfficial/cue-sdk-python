@@ -14,10 +14,10 @@ This repository is dedicated for a `cuesdk` package on [PyPI](https://pypi.org/p
 
 `cuesdk` can be used on the following platforms:
 
-- Windows 7 (32-bit and 64-bit);
-- Windows 8, 8.1 (32-bit and 64-bit);
-- Windows 10 (32-bit and 64-bit);
-- Windows 11 (32-bit and 64-bit);
+- Windows 7 (x64);
+- Windows 8, 8.1 (x64);
+- Windows 10 (x64);
+- Windows 11 (x64);
 - macOS 10.13;
 - macOS 10.14;
 - macOS 10.15;
@@ -31,7 +31,6 @@ This repository is dedicated for a `cuesdk` package on [PyPI](https://pypi.org/p
 
 - [iCUE for Windows](https://www.corsair.com/icue)
 - Microsoft Visual C++ Redistributable for Visual Studio 2019.
-  - x86 <https://aka.ms/vs/17/release/vc_redist.x86.exe>
   - x64 <https://aka.ms/vs/17/release/vc_redist.x64.exe>
 
 ### macOS

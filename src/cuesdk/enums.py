@@ -95,6 +95,7 @@ class CorsairDeviceType(Enumeration):
     CDT_Motherboard = 0x0200
     CDT_GraphicsCard = 0x0400
     CDT_Touchbar = 0x0800
+    CDT_GameController = 0x1000
     CDT_All = 0xFFFFFFFF
 
 
@@ -183,6 +184,7 @@ class CorsairChannelDeviceType(Enumeration):
     CCDT_Pump = 9
     CCDT_DRAM = 10
     CCDT_WaterBlock = 11
+    CCDT_QX_Fan = 12
 
 
 class CorsairAccessLevel(Enumeration):
@@ -208,6 +210,7 @@ class CorsairLedGroup(Enumeration):
     CLG_DIY_Channel2 = 12
     CLG_DIY_Channel3 = 13
     CLG_Touchbar = 14
+    CLG_GameController = 15
 
 
 class CorsairLedId_Keyboard(Enumeration):

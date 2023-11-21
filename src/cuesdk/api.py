@@ -31,8 +31,7 @@ def get_library_path(lib_name):
 
 
 def get_library_path_windows():
-    suffix = '.x64' if sizeof(c_void_p) == 8 else ''
-    lib_name = 'iCUESDK' + suffix + '_2019.dll'
+    lib_name = 'iCUESDK.x64_2019.dll'
     return get_library_path(lib_name)
 
 
@@ -73,6 +72,8 @@ class CueSdk(object):
     def connect(
         self, on_state_changed: Callable[[CorsairSessionStateChanged], None]
     ) -> CorsairError:
+        if sizeof(c_void_p) < 8:
+            return CorsairError(CorsairError.CE_NotAllowed)
         if on_state_changed is None:
             return CorsairError(CorsairError.CE_InvalidArguments)
 
